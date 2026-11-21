@@ -7,6 +7,7 @@
       "component": "",
       "include-component-in-tag": false,
       "draft": false,
+      "initial-version": "0.1.0",
       "monorepo-tags": false,
       "package-name": "@envylabs/url-to",
       "prerelease": false,
