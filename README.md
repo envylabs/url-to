@@ -25,6 +25,7 @@ The package is ESM-only, tree-shakable, and has no runtime dependencies.
 - [Errors](#errors)
 - [Reverse parsing](#reverse-parsing)
 - [Next.js](#nextjs)
+- [Adopting @envylabs/url-to in an existing app](#adopting-envylabsurl-to-in-an-existing-app)
 - [API summary](#api-summary)
 
 ## Installation
@@ -461,6 +462,126 @@ The Origin follows the [same rules](#building-urls-url-to-and-origins) as `creat
 
 - On Next.js 15.5.0, the generated types don't accept App Router route handlers (`app/**/route.ts`) as a `Link` `href`, and `redirect` takes a plain `string`. Later 15.5 releases and Next.js 16 type both.
 - `typedRoutes` types `next/link`, `next/navigation`, and `next/form`. It doesn't type the Pages Router's `next/router` methods.
+
+## Adopting @envylabs/url-to in an existing app
+
+These steps take an existing TypeScript app from hand-built path and URL strings to Routes. They work with any router.
+
+### 1. Find the hand-built links
+
+Look for the places your app builds a path or URL itself:
+
+- Template literals and string concatenation that build a path, such as `` `/items/${id}` `` or `"/users/" + userId`.
+- `new URL(path, base)`, which joins a path to a base URL read from configuration.
+- Query strings built with `URLSearchParams`, or by joining `?`, `&`, and `=` by hand.
+
+Each distinct place one of these builds is a candidate Route.
+
+### 2. Declare a Route Set
+
+Declare a Route for each place you're converting, group them in a Route Set, and export it from a single module that call sites import. Create the path-to and url-to in the same module, so every call site imports them from one place too:
+
+```ts
+import {
+  createPathTo,
+  createUrlTo,
+  defineRouteSet,
+  route,
+} from "@envylabs/url-to";
+import { z } from "zod";
+
+export const app = defineRouteSet("app", {
+  Item: route("/items/{id}"),
+  ItemSearch: route("/items{?q,page}", {
+    params: z.object({
+      q: z.string().optional(),
+      page: z.coerce.number().int().positive().optional(),
+    }),
+  }),
+  User: route("/users/{userId}"),
+});
+
+export const pathTo = createPathTo(app);
+export const urlTo = createUrlTo(app, "https://www.example.com");
+```
+
+Use one Route Set per group of Routes served together: one for your app, and one for each external system it links to.
+
+### 3. Replace hand-built strings
+
+Replace each hand-built string with a path-to call, for links within your app, or a url-to call, for fully-qualified URLs in emails, redirects to other hosts, and server-to-server calls:
+
+```ts
+const id = "42";
+const q = "lamp";
+const page = 2;
+const userId = "7";
+
+pathTo(app.Item, { id }); // was: `/items/${id}`
+pathTo(app.ItemSearch, { q, page }); // was: `/items?${new URLSearchParams({ q, page: String(page) })}`
+urlTo(app.User, { userId }); // was: new URL(`/users/${userId}`, baseUrl).href
+```
+
+These return `"/items/42"`, `"/items?q=lamp&page=2"`, and `"https://www.example.com/users/7"`.
+
+**Adopting in stages.** You don't have to convert every link at once. Converting a few Routes at a time is the normal path: path-tos and url-tos return plain strings, so their results work alongside the hand-built strings that remain. Two things to watch for as you go:
+
+- **Grow one Route Set.** Add Routes to your app's Route Set as you convert them, rather than starting a Route Set per feature. If you do split Route Sets, give each a unique name. Names are checked only at compile time, so two Route Sets with the same name are interchangeable to the compiler:
+
+  ```ts
+  const items = defineRouteSet("app", { Item: route("/items/{id}") });
+
+  pathTo(items.Item, { id: "42" }); // compiles, because both Route Sets are named "app"
+  ```
+
+- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/shop`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)):
+
+  ```ts
+  createUrlTo(app, "https://www.example.com/shop"); // TypeError: Invalid Origin: must not include a path
+
+  const shop = defineRouteSet("shop", {
+    Item: route("/shop/items/{id}"),
+  });
+  const shopUrlTo = createUrlTo(shop, "https://www.example.com");
+
+  shopUrlTo(shop.Item, { id: "42" }); // "https://www.example.com/shop/items/42"
+  ```
+
+### 4. Replace hand-written parsing
+
+Where your app reads route params and search params by hand, validate them with `parseParams` and the same Route that builds the link. It returns a result instead of throwing, so you decide how to respond to invalid input:
+
+```ts
+const searchParams = new URLSearchParams("q=lamp&page=2");
+
+const result = parseParams(app.ItemSearch, searchParams); // was: const page = Number(searchParams.get("page") ?? 1);
+```
+
+Here `result` is `{ success: true, data: { q: "lamp", page: 2 } }`.
+
+Use `parseParamsOrThrow` instead when invalid input is a programming error, such as route params your router has already matched to the Route. It returns the data directly and throws a `UrlToError` otherwise:
+
+```ts
+const { id } = parseParamsOrThrow(app.Item, { id: "42" }); // was: const id = String(params.id);
+```
+
+Here `id` is `"42"`. [Reverse parsing](#reverse-parsing) covers sources, schemas, and template-only Routes in full.
+
+### 5. Give each external system its own Route Set and Origin
+
+Links to external systems get the same checks as your own. Give each system its own Route Set, and create its url-to with that system's Origin:
+
+```ts
+export const support = defineRouteSet("support", {
+  Article: route("/articles/{articleId}"),
+});
+
+export const supportUrlTo = createUrlTo(support, "https://support.example.com");
+
+supportUrlTo(support.Article, { articleId: "123" }); // was: `https://support.example.com/articles/${articleId}`
+```
+
+This returns `"https://support.example.com/articles/123"`. For a legacy third-party URL with a fixed query string, see [Templates](#templates), which shows how to model one exactly.
 
 ## API summary
 

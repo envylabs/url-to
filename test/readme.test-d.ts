@@ -184,3 +184,13 @@ describe("README: Next.js", () => {
     });
   });
 });
+
+describe("README: Adopting @envylabs/url-to in an existing app", () => {
+  it("treats two Route Sets with the same name as interchangeable", () => {
+    const app = defineRouteSet("app", { Home: route("/") });
+    const items = defineRouteSet("app", { Item: route("/items/{id}") });
+    const pathTo = createPathTo(app);
+
+    expectTypeOf(pathTo(items.Item, { id: "42" })).toEqualTypeOf<string>();
+  });
+});
