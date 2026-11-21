@@ -11,6 +11,10 @@ updates:
       interval: "weekly"
     versioning-strategy: "increase-if-necessary"
   - directory: "/"
+    package-ecosystem: "devcontainers"
+    schedule:
+      interval: "weekly"
+  - directory: "/"
     package-ecosystem: "github-actions"
     schedule:
       interval: "weekly"

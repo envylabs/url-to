@@ -1,4 +1,4 @@
-// Mirrors the compile-time behaviour shown in README.md. Keep the two in step:
+// Mirrors the compile-time behavior shown in README.md. Keep the two in step:
 // change one, change the other. The runtime results are in readme.test.ts.
 import type { Route as NextRoute } from "next";
 import { describe, expectTypeOf, it } from "vitest";
