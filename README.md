@@ -25,6 +25,7 @@ The package is ESM-only, tree-shakable, and has no runtime dependencies.
 - [Errors](#errors)
 - [Reverse parsing](#reverse-parsing)
 - [Next.js](#nextjs)
+- [Adopting @envylabs/url-to in an existing app](#adopting-envylabsurl-to-in-an-existing-app)
 - [API summary](#api-summary)
 
 ## Installation
@@ -461,6 +462,184 @@ The Origin follows the [same rules](#building-urls-url-to-and-origins) as `creat
 
 - On Next.js 15.5.0, the generated types don't accept App Router route handlers (`app/**/route.ts`) as a `Link` `href`, and `redirect` takes a plain `string`. Later 15.5 releases and Next.js 16 type both.
 - `typedRoutes` types `next/link`, `next/navigation`, and `next/form`. It doesn't type the Pages Router's `next/router` methods.
+
+## Adopting @envylabs/url-to in an existing app
+
+These steps take an existing TypeScript app from hand-built path and URL strings to Routes. They work with any router.
+
+### 1. Find the hand-built links
+
+Look for the places your app builds a path or URL itself:
+
+- Template literals and string concatenation that build a path, such as `` `/items/${id}` `` or `"/users/" + userId`.
+- `new URL(path, base)`, which joins a path to a base URL read from configuration.
+- Query strings built with `URLSearchParams`, or by joining `?`, `&`, and `=` by hand.
+
+Each distinct place one of these builds is a candidate Route.
+
+### 2. Declare a Route Set
+
+Declare a Route for each place you're converting, group them in a Route Set, and export it from a single module that call sites import:
+
+```ts
+import {
+  createPathTo,
+  createUrlTo,
+  defineRouteSet,
+  route,
+} from "@envylabs/url-to";
+import { z } from "zod";
+
+export const app = defineRouteSet("app", {
+  Item: route("/items/{id}"),
+  ItemSearch: route("/items{?q,page}", {
+    params: z.object({
+      q: z.string().optional(),
+      page: z.coerce.number().int().positive().optional(),
+    }),
+  }),
+  User: route("/users/{userId}"),
+});
+
+export const pathTo = createPathTo(app);
+export const urlTo = createUrlTo(app, "https://www.example.com");
+```
+
+Use one Route Set per group of Routes served together: one for your app, and one for each external system it links to.
+
+### 3. Replace hand-built strings
+
+Replace each hand-built string with a path-to call, for links within your app, or a url-to call, for fully-qualified URLs in emails, redirects to other hosts, and server-to-server calls:
+
+```ts
+const id = "42";
+const q = "lamp";
+const page = 2;
+const userId = "7";
+
+pathTo(app.Item, { id }); // was: `/items/${id}`
+pathTo(app.ItemSearch, { q, page }); // was: `/items?${new URLSearchParams({ q, page: String(page) })}`
+urlTo(app.User, { userId }); // was: new URL(`/users/${userId}`, baseUrl).href
+```
+
+These return `"/items/42"`, `"/items?q=lamp&page=2"`, and `"https://www.example.com/users/7"`.
+
+**Adopting in stages.** You don't have to convert every link at once. Converting a few Routes at a time is the normal path: path-tos and url-tos return plain strings, so their results work alongside the hand-built strings that remain. Two things to watch for as you go:
+
+- **Grow one Route Set.** Add Routes to your app's Route Set as you convert them, rather than starting a Route Set per feature. If you do split Route Sets, give each a unique name. Names are checked only at compile time, so two Route Sets with the same name are interchangeable to the compiler:
+
+  ```ts
+  const users = defineRouteSet("app", {
+    Profile: route("/users/{userId}/profile"),
+  });
+
+  pathTo(users.Profile, { userId: "7" }); // compiles and returns "/users/7/profile", though app has no Profile Route
+  ```
+
+- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/app`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)). In Next.js, pass the `basePath` to `createNextUrlTo` instead (see [Adopting in a Next.js app](#adopting-in-a-nextjs-app)):
+
+  ```ts
+  const app = defineRouteSet("app", {
+    Item: route("/app/items/{id}"),
+  });
+
+  createUrlTo(app, "https://www.example.com/app"); // TypeError: Invalid Origin: must not include a path
+
+  const urlTo = createUrlTo(app, "https://www.example.com");
+
+  urlTo(app.Item, { id: "42" }); // "https://www.example.com/app/items/42"
+  ```
+
+### 4. Replace hand-written parsing
+
+Where your app reads route params and search params by hand, validate them with `parseParams` and the same Route that builds the link. It returns a result instead of throwing, so you decide how to respond to invalid input:
+
+```ts
+const searchParams = new URLSearchParams("q=lamp&page=2");
+
+const result = parseParams(app.ItemSearch, searchParams); // was: const page = searchParams.has("page") ? Number(searchParams.get("page")) : undefined;
+```
+
+Here `result` is `{ success: true, data: { q: "lamp", page: 2 } }`.
+
+Use `parseParamsOrThrow` instead when invalid input is a programming error, such as route params your router has already matched to the Route. It returns the data directly and throws a `UrlToError` otherwise:
+
+```ts
+const { id } = parseParamsOrThrow(app.Item, { id: "42" }); // was: const id = String(params.id);
+```
+
+Here `id` is `"42"`. [Reverse parsing](#reverse-parsing) covers sources, schemas, and template-only Routes in full.
+
+### 5. Give each external system its own Route Set and Origin
+
+Links to external systems get the same checks as your own. Give each system its own Route Set, and create its url-to with that system's Origin:
+
+```ts
+export const support = defineRouteSet("support", {
+  Article: route("/articles/{articleId}"),
+});
+
+export const supportUrlTo = createUrlTo(support, "https://support.example.com");
+
+supportUrlTo(support.Article, { articleId: "123" }); // was: `https://support.example.com/articles/${articleId}`
+```
+
+This returns `"https://support.example.com/articles/123"`. For a legacy third-party URL with a fixed query string, see [Templates](#templates), which shows how to model one exactly.
+
+### Adopting in a Next.js app
+
+In a Next.js app, the steps above apply with a few differences. First, [register your app's `ParamMap`](#1-register-your-apps-parammap) and [generate the route types before type-checking](#2-generate-the-route-types-before-type-checking), as the Next.js section describes.
+
+Then declare your app's Route Set with `defineNextRouteSet`, and create its path-to and url-to with `createNextPathTo` and `createNextUrlTo`. Each template is checked against your app's Next route patterns as you convert its Route:
+
+```ts
+import { route } from "@envylabs/url-to";
+import {
+  createNextPathTo,
+  createNextUrlTo,
+  defineNextRouteSet,
+} from "@envylabs/url-to/next";
+import { z } from "zod";
+
+// was: export const app = defineRouteSet("app", {
+export const app = defineNextRouteSet("app", {
+  Item: route("/items/{id}"), // app/items/[id]/page.tsx
+  ItemSearch: route("/items{?q,page}", {
+    params: z.object({
+      q: z.string().optional(),
+      page: z.coerce.number().int().positive().optional(),
+    }),
+  }), // app/items/page.tsx
+  Robots: route("/robots.txt", { next: false }), // not a Next route pattern
+  User: route("/users/{userId}"), // app/users/[userId]/page.tsx
+});
+
+export const pathTo = createNextPathTo(app); // was: createPathTo(app)
+export const urlTo = createNextUrlTo(app, "https://www.example.com"); // was: createUrlTo(app, "https://www.example.com")
+```
+
+- **Only the Routes it contains are checked.** A Next Route Set doesn't have to cover every page in your app, so you can convert a few Routes without declaring the rest first.
+- **Paths that aren't Next route patterns** keep `next: false`, such as `/robots.txt`, paths handled by middleware, or Pages Router API routes. See **Opting out** under [Define a Next Route Set](#3-define-a-next-route-set).
+- **With `typedRoutes` on**, the path-to returns Next's `Route` for a checked Route, so its results and the plain-string links that remain go to `Link`, `router.push`, `redirect`, and `Form` side by side. A `next: false` Route's path is a plain `string`:
+
+  ```ts
+  pathTo(app.Item, { id: "42" }); // "/items/42", typed as Next's Route
+  pathTo(app.ItemSearch, { q: "lamp", page: 2 }); // "/items?q=lamp&page=2", typed as Next's Route
+  pathTo(app.Robots); // "/robots.txt", typed as string
+  ```
+
+- **A path prefix is the `basePath`.** If your app is served under a `basePath`, keep it out of the templates and the Origin, and pass it to `createNextUrlTo`, as Next.js steps [4](#4-build-paths-with-createnextpathto) and [5](#5-build-urls-with-createnexturlto) describe:
+
+  ```ts
+  createNextUrlTo(app, "https://www.example.com/app"); // TypeError: Invalid Origin: must not include a path
+
+  const urlTo = createNextUrlTo(app, "https://www.example.com", {
+    basePath: "/app",
+  });
+
+  urlTo(app.User, { userId: "7" }); // "https://www.example.com/app/users/7"
+  pathTo(app.User, { userId: "7" }); // "/users/7"
+  ```
 
 ## API summary
 

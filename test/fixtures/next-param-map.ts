@@ -9,7 +9,9 @@ interface ParamMap {
   "/api/health": {};
   "/docs/[...slug]": { slug: string[] };
   "/help/[[...slug]]": { slug?: string[] };
+  "/items": {};
   "/items/[id]": { id: string };
+  "/users/[userId]": { userId: string };
   "/users/[userId]/posts/[postId]": { postId: string; userId: string };
 }
 

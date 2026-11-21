@@ -184,3 +184,54 @@ describe("README: Next.js", () => {
     });
   });
 });
+
+describe("README: Adopting @envylabs/url-to in an existing app", () => {
+  it("treats two Route Sets with the same name as interchangeable", () => {
+    const app = defineRouteSet("app", {
+      Item: route("/items/{id}"),
+      ItemSearch: route("/items{?q,page}", {
+        params: z.object({
+          page: z.coerce.number().int().positive().optional(),
+          q: z.string().optional(),
+        }),
+      }),
+      User: route("/users/{userId}"),
+    });
+    const users = defineRouteSet("app", {
+      Profile: route("/users/{userId}/profile"),
+    });
+    const pathTo = createPathTo(app);
+
+    expectTypeOf(
+      pathTo(users.Profile, { userId: "7" }),
+    ).toEqualTypeOf<string>();
+  });
+
+  describe("Adopting in a Next.js app", () => {
+    const app = defineNextRouteSet("app", {
+      Item: route("/items/{id}"),
+      ItemSearch: route("/items{?q,page}", {
+        params: z.object({
+          page: z.coerce.number().int().positive().optional(),
+          q: z.string().optional(),
+        }),
+      }),
+      Robots: route("/robots.txt", { next: false }),
+      User: route("/users/{userId}"),
+    });
+    const pathTo = createNextPathTo(app);
+
+    it("types checked Routes as Next's Route and next: false Routes as string", () => {
+      expectTypeOf(pathTo(app.Item, { id: "42" })).toEqualTypeOf<NextRoute>();
+      expectTypeOf(
+        pathTo(app.ItemSearch, { page: 2, q: "lamp" }),
+      ).toEqualTypeOf<NextRoute>();
+      expectTypeOf(pathTo(app.Robots)).toEqualTypeOf<string>();
+    });
+
+    it("accepts path-to results and plain-string links where Next's Route is expected", () => {
+      expectTypeOf(pathTo(app.Item, { id: "42" })).toExtend<NextRoute>();
+      expectTypeOf<"/users/7">().toExtend<NextRoute>();
+    });
+  });
+});

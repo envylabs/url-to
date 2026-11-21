@@ -361,3 +361,123 @@ describe("README: Next.js", () => {
     expect(urlTo(web.Home)).toBe("https://www.example.com/app");
   });
 });
+
+describe("README: Adopting @envylabs/url-to in an existing app", () => {
+  const app = defineRouteSet("app", {
+    Item: route("/items/{id}"),
+    ItemSearch: route("/items{?q,page}", {
+      params: z.object({
+        page: z.coerce.number().int().positive().optional(),
+        q: z.string().optional(),
+      }),
+    }),
+    User: route("/users/{userId}"),
+  });
+  const pathTo = createPathTo(app);
+  const urlTo = createUrlTo(app, "https://www.example.com");
+
+  it("replaces a hand-built path, query string and URL", () => {
+    const id = "42";
+    const q = "lamp";
+    const page = 2;
+    const userId = "7";
+
+    expect(pathTo(app.Item, { id })).toBe("/items/42");
+    expect(pathTo(app.ItemSearch, { page, q })).toBe("/items?q=lamp&page=2");
+    expect(urlTo(app.User, { userId })).toBe("https://www.example.com/users/7");
+  });
+
+  it("builds a Route from another Route Set with the same name", () => {
+    const users = defineRouteSet("app", {
+      Profile: route("/users/{userId}/profile"),
+    });
+
+    expect(pathTo(users.Profile, { userId: "7" })).toBe("/users/7/profile");
+  });
+
+  it("rejects an Origin with a path, so the prefix goes in the templates", () => {
+    const app = defineRouteSet("app", {
+      Item: route("/app/items/{id}"),
+    });
+    const error = thrownBy(() =>
+      createUrlTo(app, "https://www.example.com/app"),
+    );
+
+    expect(error).toBeInstanceOf(TypeError);
+    expect(error).toHaveProperty(
+      "message",
+      "Invalid Origin: must not include a path",
+    );
+
+    const urlTo = createUrlTo(app, "https://www.example.com");
+
+    expect(urlTo(app.Item, { id: "42" })).toBe(
+      "https://www.example.com/app/items/42",
+    );
+  });
+
+  it("replaces hand-written parsing", () => {
+    const searchParams = new URLSearchParams("q=lamp&page=2");
+
+    expect(parseParams(app.ItemSearch, searchParams)).toEqual({
+      data: { page: 2, q: "lamp" },
+      success: true,
+    });
+    expect(parseParamsOrThrow(app.Item, { id: "42" })).toEqual({ id: "42" });
+  });
+
+  it("gives an external system its own Route Set and Origin", () => {
+    const support = defineRouteSet("support", {
+      Article: route("/articles/{articleId}"),
+    });
+    const supportUrlTo = createUrlTo(support, "https://support.example.com");
+
+    expect(supportUrlTo(support.Article, { articleId: "123" })).toBe(
+      "https://support.example.com/articles/123",
+    );
+  });
+
+  describe("Adopting in a Next.js app", () => {
+    const app = defineNextRouteSet("app", {
+      Item: route("/items/{id}"),
+      ItemSearch: route("/items{?q,page}", {
+        params: z.object({
+          page: z.coerce.number().int().positive().optional(),
+          q: z.string().optional(),
+        }),
+      }),
+      Robots: route("/robots.txt", { next: false }),
+      User: route("/users/{userId}"),
+    });
+    const pathTo = createNextPathTo(app);
+
+    it("builds the same paths from a Next Route Set", () => {
+      expect(pathTo(app.Item, { id: "42" })).toBe("/items/42");
+      expect(pathTo(app.ItemSearch, { page: 2, q: "lamp" })).toBe(
+        "/items?q=lamp&page=2",
+      );
+      expect(pathTo(app.Robots)).toBe("/robots.txt");
+    });
+
+    it("passes the basePath to the Next url-to, not the Origin", () => {
+      const error = thrownBy(() =>
+        createNextUrlTo(app, "https://www.example.com/app"),
+      );
+
+      expect(error).toBeInstanceOf(TypeError);
+      expect(error).toHaveProperty(
+        "message",
+        "Invalid Origin: must not include a path",
+      );
+
+      const urlTo = createNextUrlTo(app, "https://www.example.com", {
+        basePath: "/app",
+      });
+
+      expect(urlTo(app.User, { userId: "7" })).toBe(
+        "https://www.example.com/app/users/7",
+      );
+      expect(pathTo(app.User, { userId: "7" })).toBe("/users/7");
+    });
+  });
+});
