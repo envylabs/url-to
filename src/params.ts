@@ -5,6 +5,7 @@ import type {
   StandardSchemaV1InferOutput,
 } from "./standard-schema.js";
 import type {
+  MisplacedListKeys,
   RequiredValueOperator,
   TemplateParameters,
   TemplateVariableNames,
@@ -17,6 +18,8 @@ import type {
  * with it to reject a mismatch at compile time. The output keys must equal the
  * template's variables, and a variable in a simple or reserved expression
  * can't be optional, since leaving it out would leave an empty path segment.
+ * A variable that isn't exploded in every expression can't be a list or
+ * record.
  */
 export type CheckParamsSchema<
   Template extends string,
@@ -26,7 +29,8 @@ export type CheckParamsSchema<
       TemplateVariables<Template>["name"],
       OutputKeys<Params>,
       OptionalKeys<StandardSchemaV1InferOutput<Params>> &
-        TemplateVariableNames<Template, RequiredValueOperator>
+        TemplateVariableNames<Template, RequiredValueOperator>,
+      MisplacedListKeys<Template, StandardSchemaV1InferOutput<Params>>
     >
   : unknown;
 
@@ -67,14 +71,21 @@ type OptionalKeys<Output> = {
 type OutputKeys<Params extends StandardSchemaV1> =
   keyof StandardSchemaV1InferOutput<Params> & string;
 
-type SchemaProblems<Variables extends string, Keys extends string, Optional> = [
+type SchemaProblems<
+  Variables extends string,
+  Keys extends string,
+  Optional,
+  Misplaced,
+> = [
   Exclude<Variables, Keys>,
   Exclude<Keys, Variables>,
   Optional,
-] extends [never, never, never]
+  Misplaced,
+] extends [never, never, never, never]
   ? unknown
   : {
       readonly "Route Parameters schema doesn't match the template": {
+        readonly "list or record in a non-exploded expression": Misplaced;
         readonly "missing from the schema": Exclude<Variables, Keys>;
         readonly "not in the template": Exclude<Keys, Variables>;
         readonly "optional in a simple or reserved expression": Optional;

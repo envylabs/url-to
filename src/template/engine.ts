@@ -13,15 +13,30 @@ export interface ParsedTemplate {
   readonly variables: readonly TemplateVariable[];
 }
 
-/**
- * Values the engine can expand. Undefined values are left out per RFC 6570.
- */
-export type TemplateValues = Readonly<Record<string, string | undefined>>;
+/** A single value, turned into a string before it is escaped. */
+export type ScalarValue = boolean | number | string;
 
 /**
- * A variable in a template expression, e.g. `id` in `{id}`.
+ * A value the engine can expand: a scalar, a list or an associative array
+ * (record), per RFC 6570 section 2.3.
+ */
+export type TemplateValue =
+  Readonly<Record<string, ScalarValue>> | readonly ScalarValue[] | ScalarValue;
+
+/**
+ * Values the engine can expand. Undefined values, empty lists and empty
+ * records are left out per RFC 6570.
+ */
+export type TemplateValues = Readonly<
+  Record<string, TemplateValue | undefined>
+>;
+
+/**
+ * A variable in a template expression, e.g. `id` in `{id}`, or `tags` with
+ * `explode` set in `{?tags*}`.
  */
 export interface TemplateVariable {
+  readonly explode: boolean;
   readonly name: string;
   readonly operator: OperatorSpec;
 }
@@ -100,22 +115,43 @@ export function parseTemplate(template: string): ParsedTemplate {
   return parsed;
 }
 
+/**
+ * Expands one expression per RFC 6570 Appendix A.
+ */
 function expandExpression(
   operator: OperatorSpec,
   variables: readonly TemplateVariable[],
   values: TemplateValues,
 ): string {
-  const expansions = variables.flatMap(({ name }) => {
+  const expansions = variables.flatMap(({ explode, name }) => {
     const value = values[name];
     if (value === undefined) {
       return [];
     }
 
-    const encoded = encode(value, operator.allowReserved);
-    if (!operator.named) {
-      return [encoded];
+    const ownKey = operator.named ? name : undefined;
+    if (typeof value !== "object") {
+      return [expandMember(operator, ownKey, String(value))];
     }
-    return [value === "" ? name + operator.ifEmpty : `${name}=${encoded}`];
+
+    const members = toMembers(value);
+    if (members.length === 0) {
+      return [];
+    }
+
+    if (explode) {
+      return [
+        members
+          .map(([key, item]) => expandMember(operator, key ?? ownKey, item))
+          .join(operator.separator),
+      ];
+    }
+
+    const joined = members
+      .flatMap(([key, item]) => (key === undefined ? [item] : [key, item]))
+      .map((part) => encode(part, operator.allowReserved))
+      .join(",");
+    return [ownKey === undefined ? joined : `${ownKey}=${joined}`];
   });
 
   return expansions.length === 0
@@ -123,10 +159,34 @@ function expandExpression(
     : operator.first + expansions.join(operator.separator);
 }
 
+/**
+ * Expands one string, as `key=value` when it has a key (a named operator's
+ * variable name, or a record key in an exploded expression).
+ */
+function expandMember(
+  operator: OperatorSpec,
+  key: string | undefined,
+  value: string,
+): string {
+  const encoded = encode(value, operator.allowReserved);
+  if (key === undefined) {
+    return encoded;
+  }
+
+  const encodedKey = encode(key, operator.allowReserved);
+  return value === "" && operator.named
+    ? encodedKey + operator.ifEmpty
+    : `${encodedKey}=${encoded}`;
+}
+
 function invalid(template: string, reason: string): never {
   throw new TypeError(
     `Invalid Route template ${JSON.stringify(template)}: ${reason}`,
   );
+}
+
+function isList(value: TemplateValue): value is readonly ScalarValue[] {
+  return Array.isArray(value);
 }
 
 function parseExpression(
@@ -149,16 +209,27 @@ function parseExpression(
       if (varspec.includes(":")) {
         invalid(template, `prefix modifiers are not supported in "${varspec}"`);
       }
-      if (varspec.includes("*")) {
-        invalid(template, `unsupported modifier in "${varspec}"`);
-      }
-      if (!varnamePattern.test(varspec)) {
+      const explode = varspec.endsWith("*");
+      const name = explode ? varspec.slice(0, -1) : varspec;
+      if (!varnamePattern.test(name)) {
         invalid(template, `invalid variable name "${varspec}"`);
       }
-      return { name: varspec, operator };
+      return { explode, name, operator };
     });
 
   return { kind: "expression", operator, variables };
+}
+
+/**
+ * A list's items as `[undefined, item]` or a record's entries as
+ * `[key, value]`, with every member turned into a string.
+ */
+function toMembers(
+  value: Exclude<TemplateValue, ScalarValue>,
+): (readonly [string | undefined, string])[] {
+  return isList(value)
+    ? value.map((item) => [undefined, String(item)] as const)
+    : Object.entries(value).map(([key, item]) => [key, String(item)] as const);
 }
 
 const pctEncoded = /^%[0-9A-Fa-f]{2}$/;

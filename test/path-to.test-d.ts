@@ -53,18 +53,18 @@ describe("createPathTo types", () => {
 describe("template-only Route Parameters types", () => {
   it("infers a required string for each variable", () => {
     expectTypeOf<RouteParameters<typeof app.Item>>().toEqualTypeOf<{
-      id: string;
+      id: boolean | number | string;
     }>();
     expectTypeOf<RouteParameters<typeof app.ItemReview>>().toEqualTypeOf<{
-      itemId: string;
-      reviewId: string;
+      itemId: boolean | number | string;
+      reviewId: boolean | number | string;
     }>();
   });
 
   it("infers every variable in a variable list", () => {
     expectTypeOf<RouteParameters<typeof shapes.Size>>().toEqualTypeOf<{
-      x: string;
-      y: string;
+      x: boolean | number | string;
+      y: boolean | number | string;
     }>();
   });
 
@@ -95,7 +95,7 @@ describe("template-only Route Parameters types", () => {
   it("rejects non-string values", () => {
     const pathTo = createPathTo(app);
 
-    // @ts-expect-error: id must be a string
+    // @ts-expect-error: id must be a value, not undefined
     pathTo(app.Item, { id: undefined });
   });
 });
@@ -116,8 +116,8 @@ describe("route template syntax types", () => {
 
   it("accepts dotted and underscored variable names", () => {
     expectTypeOf<RouteParameters<typeof shapes.Names>>().toEqualTypeOf<{
-      _owner_1: string;
-      "item.id": string;
+      _owner_1: boolean | number | string;
+      "item.id": boolean | number | string;
     }>();
   });
 });
