@@ -7,7 +7,7 @@
 Every change keeps these public promises:
 
 - ESM-only, with no CommonJS build ([ADR 0002](docs/adr/0002-standard-schema-and-own-uri-template-engine.md)).
-- TypeScript 5.5 is the minimum supported version ([README Requirements](README.md#installation)).
+- TypeScript 5.5 is the minimum supported version ([README Installation](README.md#installation)).
 - Error messages never include Route Parameter values ([README Errors](README.md#errors)).
 
 ## Dependencies
