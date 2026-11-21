@@ -1,5 +1,6 @@
 import type { Route as NextRoute } from "next";
 import { describe, expectTypeOf, it } from "vitest";
+import { z } from "zod";
 
 import { defineRouteSet, route } from "../src/index.js";
 import {
@@ -33,6 +34,13 @@ describe("createNextPathTo types", () => {
     expectTypeOf(
       pathTo(web.ItemSearch, { id: "1" }),
     ).toEqualTypeOf<NextRoute>();
+    expectTypeOf(
+      pathTo(web.Docs, { slug: ["a", "b"] }),
+    ).toEqualTypeOf<NextRoute>();
+    expectTypeOf(pathTo(web.Shop)).toEqualTypeOf<NextRoute>();
+    expectTypeOf(pathTo(web.Shop, { slug: ["a"] })).toEqualTypeOf<NextRoute>();
+    // @ts-expect-error: slug is required for a catch-all
+    pathTo(web.Docs);
     // @ts-expect-error: id is required
     pathTo(web.Item);
     // @ts-expect-error: id is missing
@@ -93,6 +101,54 @@ describe("defineNextRouteSet types", () => {
     defineNextRouteSet("renamed", {
       // @ts-expect-error: the Next route pattern uses userId and postId
       UserPost: route("/users/{id}/posts/{postId}"),
+    });
+  });
+
+  it("maps a required exploded path segment to a catch-all", () => {
+    expectTypeOf(
+      defineNextRouteSet("catchAll", {
+        Docs: route("/docs{/slug*}"),
+        DocsSchema: route("/docs{/slug*}", {
+          params: z.object({ slug: z.array(z.string()).min(1) }),
+        }),
+      }),
+    ).toExtend<NextRouteSet<"catchAll">>();
+  });
+
+  it("maps an optional exploded path segment to an optional catch-all", () => {
+    expectTypeOf(
+      defineNextRouteSet("optionalCatchAll", {
+        Shop: route("/shop{/slug*}", {
+          params: z.object({ slug: z.array(z.string()).optional() }),
+        }),
+      }),
+    ).toExtend<NextRouteSet<"optionalCatchAll">>();
+  });
+
+  it("rejects a catch-all whose optionality differs from Next's", () => {
+    defineNextRouteSet("catchAll", {
+      // @ts-expect-error: a template-only {/slug*} is required, but Next's is [[...slug]]
+      Shop: route("/shop{/slug*}"),
+    });
+    defineNextRouteSet("catchAll", {
+      // @ts-expect-error: an optional slug maps to [[...slug]], but Next's is [...slug]
+      Docs: route("/docs{/slug*}", {
+        params: z.object({ slug: z.array(z.string()).optional() }),
+      }),
+    });
+  });
+
+  it("rejects a catch-all with a different segment name", () => {
+    defineNextRouteSet("catchAll", {
+      // @ts-expect-error: the Next route pattern is /docs/[...slug]
+      Docs: route("/docs{/path*}"),
+    });
+  });
+
+  it("rejects a path segment expression that isn't exploded", () => {
+    defineNextRouteSet("catchAll", {
+      // @ts-expect-error: only {/x*} maps to a catch-all
+      Docs: route("/docs{/slug}"),
     });
   });
 

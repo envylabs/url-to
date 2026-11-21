@@ -8,7 +8,9 @@ import { validateRouteParameters } from "./validate.js";
  * Shared by every path-to and url-to. Throws {@link UrlToError}.
  */
 export function buildPath(route: Route, params: unknown): string {
-  const result = validateRouteParameters(route, params);
+  // An omitted params argument means "no Route Parameters", which a schema
+  // expects as an empty object.
+  const result = validateRouteParameters(route, params ?? {});
 
   if (!result.success) {
     throw new UrlToError(route, result.issues);

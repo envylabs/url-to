@@ -34,6 +34,19 @@ describe("createNextPathTo", () => {
     );
   });
 
+  it("builds catch-all paths", () => {
+    expect(pathTo(web.Docs, { slug: ["guides", "a b"] })).toBe(
+      "/docs/guides/a%20b",
+    );
+    expect(pathTo(web.Docs, { slug: "intro" })).toBe("/docs/intro");
+  });
+
+  it("builds optional catch-all paths", () => {
+    expect(pathTo(web.Shop)).toBe("/shop");
+    expect(pathTo(web.Shop, {})).toBe("/shop");
+    expect(pathTo(web.Shop, { slug: ["sale", "new"] })).toBe("/shop/sale/new");
+  });
+
   it("keeps query and fragment parts", () => {
     expect(pathTo(web.ItemSearch, { id: "1", page: "2", q: "a&b" })).toBe(
       "/items/1?q=a%26b&page=2#reviews",

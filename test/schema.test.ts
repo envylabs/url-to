@@ -39,6 +39,19 @@ describe("Routes with a Standard Schema", () => {
     );
   });
 
+  it("validates an omitted params argument as an empty object", () => {
+    const listing = defineRouteSet("listing", {
+      Items: route("/items{?page}", {
+        params: z.object({ page: z.number().optional() }),
+      }),
+    });
+    const pathTo = createPathTo(listing);
+    const urlTo = createUrlTo(listing, "https://example.com");
+
+    expect(pathTo(listing.Items)).toBe("/items");
+    expect(urlTo(listing.Items)).toBe("https://example.com/items");
+  });
+
   it("fills a url-to's template from the schema's output", () => {
     const urlTo = createUrlTo(catalog, "https://example.com");
 
