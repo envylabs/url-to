@@ -44,20 +44,31 @@ describe("parseParams", () => {
 
   it("turns repeated URLSearchParams keys into arrays", () => {
     const filters = defineRouteSet("filters", {
-      Items: route("/items{?tags}", {
+      Items: route("/items{?tags*}", {
         params: z.object({
-          tags: z
-            .union([z.string(), z.array(z.string())])
-            .transform((tags) => (Array.isArray(tags) ? tags.join("|") : tags)),
+          tags: z.union([z.string(), z.array(z.string())]),
         }),
       }),
     });
 
     expect(
       parseParams(filters.Items, new URLSearchParams("tags=a&tags=b")),
-    ).toEqual({ data: { tags: "a|b" }, success: true });
+    ).toEqual({ data: { tags: ["a", "b"] }, success: true });
     expect(parseParams(filters.Items, new URLSearchParams("tags=a"))).toEqual({
       data: { tags: "a" },
+      success: true,
+    });
+  });
+
+  it("returns a schema's number output", () => {
+    const pages = defineRouteSet("pages", {
+      Page: route("/pages/{page}", {
+        params: z.object({ page: z.coerce.number().int() }),
+      }),
+    });
+
+    expect(parseParams(pages.Page, { page: "3" })).toEqual({
+      data: { page: 3 },
       success: true,
     });
   });
@@ -97,6 +108,46 @@ describe("parseParams", () => {
       });
       expect(parseParams(people.User, { userId: "" })).toEqual({
         issues: [{ message: "must not be empty", path: ["userId"] }],
+        success: false,
+      });
+    });
+
+    it("turns repeated URLSearchParams keys into a list for an exploded variable", () => {
+      const listings = defineRouteSet("listings", {
+        Search: route("/search{?tags*}"),
+      });
+
+      expect(
+        parseParams(listings.Search, new URLSearchParams("tags=a&tags=b")),
+      ).toEqual({ data: { tags: ["a", "b"] }, success: true });
+      expect(
+        parseParams(listings.Search, new URLSearchParams("tags=a")),
+      ).toEqual({ data: { tags: "a" }, success: true });
+    });
+
+    it("rejects a list for a variable that isn't exploded", () => {
+      expect(
+        parseParams(
+          people.User,
+          { userId: "u1" },
+          new URLSearchParams("tab=a&tab=b"),
+        ),
+      ).toEqual({
+        issues: [{ message: "must be a string", path: ["tab"] }],
+        success: false,
+      });
+    });
+
+    it("rejects values that aren't strings", () => {
+      const listings = defineRouteSet("listings", {
+        Search: route("/search{?q,tags*}"),
+      });
+
+      expect(parseParams(listings.Search, { q: 1, tags: ["a", 2] })).toEqual({
+        issues: [
+          { message: "must be a string", path: ["q"] },
+          { message: "must be a string or list of strings", path: ["tags"] },
+        ],
         success: false,
       });
     });

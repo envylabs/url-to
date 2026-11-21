@@ -57,12 +57,13 @@ export type RouteParametersArgs<R extends RouteDefinition> =
 
 /**
  * The validated Route Parameters that fill a Route's template: its schema's
- * output type, or, for a template-only Route, the inferred parameters.
+ * output type, or, for a template-only Route, the parsed parameters inferred
+ * from its template (strings, and lists of strings for exploded variables).
  */
 export type RouteParametersOutput<R extends RouteDefinition> =
   R["params"] extends StandardSchemaV1
     ? StandardSchemaV1InferOutput<R["params"]>
-    : TemplateParameters<R["template"]>;
+    : TemplateParameters<R["template"], "parsed">;
 
 type OptionalKeys<Output> = {
   [Key in keyof Output]-?: undefined extends Output[Key] ? Key : never;

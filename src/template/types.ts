@@ -95,20 +95,27 @@ export interface TemplateError<Message extends string = string> {
  * The Route Parameters inferred from a template. A variable is required if
  * any of its occurrences is in a path-type expression, otherwise optional. It
  * takes a scalar, or also a list or record when every occurrence is exploded.
+ *
+ * With `Mode` set to `"parsed"`, the values are what reverse parsing yields
+ * instead: a string, or also a list of strings when every occurrence is
+ * exploded.
  */
-export type TemplateParameters<Template extends string> = Simplify<
+export type TemplateParameters<
+  Template extends string,
+  Mode extends "input" | "parsed" = "input",
+> = Simplify<
   {
     [
       Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
         ? never
         : Variable["name"]
-    ]?: ParameterValue<Template, Variable["name"]>;
+    ]?: ParameterValue<Template, Variable["name"], Mode>;
   } & {
     [
       Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
         ? Variable["name"]
         : never
-    ]: ParameterValue<Template, Variable["name"]>;
+    ]: ParameterValue<Template, Variable["name"], Mode>;
   }
 >;
 
@@ -193,8 +200,15 @@ type OperatorCharacter =
  * The value type accepted for a variable: a list or record only when every
  * occurrence of it is exploded, otherwise a scalar.
  */
-type ParameterValue<Template extends string, Name extends string> =
-  Name extends ScalarVariableNames<Template>
+type ParameterValue<
+  Template extends string,
+  Name extends string,
+  Mode extends "input" | "parsed",
+> = Mode extends "parsed"
+  ? Name extends ScalarVariableNames<Template>
+    ? string
+    : string | string[]
+  : Name extends ScalarVariableNames<Template>
     ? ScalarValue
     : ListValue | RecordValue | ScalarValue;
 
