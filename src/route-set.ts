@@ -2,6 +2,11 @@ import type { RouteDefinition } from "./route.js";
 
 const routeSetNameKey: unique symbol = Symbol("url-to.routeSetName");
 
+/** Rejects a non-literal Route Set name at compile time. */
+export type LiteralName<Name extends string> = string extends Name
+  ? { "Route Set names must be string literals": never }
+  : unknown;
+
 /**
  * A named Route that belongs to a Route Set. `Name` is its key in the Route
  * Set, and `RouteSetName` brands it with the Route Set, so that helpers built
@@ -37,10 +42,6 @@ export type RouteSet<
     RouteSetName
   >;
 };
-
-type LiteralName<Name extends string> = string extends Name
-  ? { "Route Set names must be string literals": never }
-  : unknown;
 
 /**
  * Groups Routes into a named Route Set. Each Route takes its key as its name

@@ -14,6 +14,11 @@ export interface RouteDefinition<
 > {
   /** App-specific data attached to the Route, with its literal type. */
   readonly meta: Meta;
+  /**
+   * `false` when the Route opts out of Next route pattern checking in a Next
+   * Route Set. Ignored outside `@envylabs/url-to/next`.
+   */
+  readonly next?: false;
   /** The Standard Schema for the Route Parameters, if any. */
   readonly params: Params;
   /** The RFC 6570 URI template. Always starts with `/`. */
@@ -34,6 +39,11 @@ type DeclaredRoute<
   unknown extends Meta ? undefined : Meta
 >;
 
+/** Marks a Route declared with `next: false`. */
+type NextOptOut<Next extends false | undefined> = [Next] extends [false]
+  ? { readonly next: false }
+  : unknown;
+
 /**
  * Declares a Route from its URI template, with an optional Standard Schema for
  * its Route Parameters and optional `meta`. The template must start with `/`
@@ -44,11 +54,18 @@ export function route<
   const Template extends `/${string}`,
   Params extends StandardSchemaV1 | undefined = undefined,
   const Meta = undefined,
+  const Next extends false | undefined = undefined,
 >(
   template: CheckTemplate<Template> & Template,
   options?: {
     /** App-specific data, kept with its literal type. */
     readonly meta?: Meta;
+    /**
+     * `false` opts the Route out of Next route pattern checking in a Next
+     * Route Set (for example `/robots.txt` or a path handled by middleware).
+     * Its Next path-to then returns a plain `string`.
+     */
+    readonly next?: Next;
     /**
      * A Standard Schema for the Route Parameters. Its output keys must match
      * the template's variables. Arguments take its input type, and the
@@ -56,7 +73,7 @@ export function route<
      */
     readonly params?: CheckParamsSchema<Template, Params> & Params;
   },
-): DeclaredRoute<Template, Params, Meta> {
+): DeclaredRoute<Template, Params, Meta> & NextOptOut<Next> {
   if (!template.startsWith("/")) {
     throw new TypeError(
       `Route templates must start with "/": received ${JSON.stringify(template)}`,
@@ -69,5 +86,6 @@ export function route<
     meta: options?.meta,
     params: options?.params,
     template,
-  }) as DeclaredRoute<Template, Params, Meta>;
+    ...(options?.next === false ? { next: false } : {}),
+  }) as DeclaredRoute<Template, Params, Meta> & NextOptOut<Next>;
 }
