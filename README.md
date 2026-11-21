@@ -2,7 +2,7 @@
 
 Typed, validated construction of known paths and URLs, for an application's own pages and for the external systems it links to.
 
-Declare each destination once, as a **Route**: an [RFC 6570](https://www.rfc-editor.org/rfc/rfc6570) URI template plus an optional [Standard Schema](https://standardschema.dev) for its **Route Parameters**. Group Routes into a **Route Set**, then build paths and URLs from it:
+Declare each **Route** once, as an [RFC 6570](https://www.rfc-editor.org/rfc/rfc6570) URI template plus an optional [Standard Schema](https://standardschema.dev) for its **Route Parameters**. Group Routes into a **Route Set**, then build paths and URLs from it:
 
 - Route Parameter types are inferred from the template, so a missing or misspelled value is a compile error.
 - Values are validated at runtime and URI-escaped by the template engine.
@@ -67,7 +67,7 @@ urlTo(app.Item, { id: "42" }); // "https://www.example.com/items/42"
 
 ## Routes and Route Sets
 
-A **Route** is a named, known destination: a page, an API endpoint, or a file, in your app or in an external system. Declare it with `route(template, options?)`:
+A **Route** is a named, known place your code links to: a page, an API endpoint, or a file, in your app or in an external system. Declare it with `route(template, options?)`:
 
 ```ts
 route("/orders/{orderId}");
@@ -90,7 +90,7 @@ app.Order.template; // "/orders/{orderId}"
 
 Each key becomes the Route's name, and every Route is branded with its Route Set. The Route Set's name must be a string literal, and should be unique within your application: it is what tells Route Sets apart at compile time, and it appears in error messages.
 
-Because a Route is a value, typing `app.` lists every destination, renaming a key with your editor updates every call site, and Find All References shows everywhere that links to it. To move a page, change only its template.
+Because a Route is a value, typing `app.` lists every Route, renaming a key with your editor updates every call site, and Find All References shows everywhere that links to it. To move a page, change only its template.
 
 Helpers built for one Route Set reject Routes from another, so you can never build an admin path against your storefront's Origin:
 
@@ -177,7 +177,7 @@ publicUrlTo(store.Product, { sku: "A-1" }); // "https://store.example.com/produc
 internalUrlTo(store.Product, { sku: "A-1" }); // "http://store.internal:8080/products/A-1"
 ```
 
-The Origin is validated when the url-to is created, and an invalid one throws a `TypeError`. It must be an absolute URL with a scheme and host, and may have a port and a bare trailing `/`. Anything else is rejected, so a misconfigured base URL can't silently drop a path prefix:
+The Origin is validated when the url-to is created, and an invalid one throws a `TypeError`. It must be an absolute URL with a scheme and host, and may have a port and a bare trailing `/`. Anything else is rejected, so a misconfigured Origin can't silently drop a path prefix:
 
 ```ts
 createUrlTo(store, "https://example.com/shop"); // TypeError: Invalid Origin: must not include a path
@@ -416,7 +416,7 @@ defineNextRouteSet("web", {
 });
 ```
 
-**Opting out.** Destinations that aren't Next route patterns, such as `/robots.txt`, paths handled by middleware, or Pages Router API routes (`pages/api/*`, which aren't in `ParamMap`), can live in the same Route Set with `next: false`. They aren't checked, and their path is typed as a plain `string`, not Next's `Route`.
+**Opting out.** Routes that aren't Next route patterns, such as `/robots.txt`, paths handled by middleware, or Pages Router API routes (`pages/api/*`, which aren't in `ParamMap`), can live in the same Route Set with `next: false`. They aren't checked, and their path is typed as a plain `string`, not Next's `Route`.
 
 ### 4. Build paths with `createNextPathTo`
 
