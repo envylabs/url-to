@@ -21,5 +21,5 @@ The scheme, host, and port a Route Set is served from, e.g. `https://store.examp
 _Avoid_: Base URL, Domain, Host, Site URL
 
 **Next route pattern**:
-A Next.js file-system route, written with bracketed segments, e.g. `/pets/[patientId]`. It is distinct from a Route, which may be bound to one.
+A Next.js file-system route, written with bracketed segments, e.g. `/items/[itemId]`. It is distinct from a Route, which may be bound to one.
 _Avoid_: Next route (unqualified), Page route
