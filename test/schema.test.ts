@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   createPathTo,
+  createUrlTo,
   defineRouteSet,
   route,
   UrlToError,
@@ -35,6 +36,14 @@ describe("Routes with a Standard Schema", () => {
 
     expect(pathTo(catalog.ItemReview, { itemId: "  7 ", reviewId: 2026 })).toBe(
       "/items/7/reviews/2026",
+    );
+  });
+
+  it("fills a url-to's template from the schema's output", () => {
+    const urlTo = createUrlTo(catalog, "https://example.com");
+
+    expect(urlTo(catalog.Item, { id: 42 })).toBe(
+      "https://example.com/items/42",
     );
   });
 

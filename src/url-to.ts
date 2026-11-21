@@ -2,13 +2,14 @@ import { buildPath } from "./build.js";
 import { parseOrigin } from "./origin.js";
 import type { RouteParametersArgs } from "./params.js";
 import type { Route, RouteSet } from "./route-set.js";
+import type { RouteDefinition } from "./route.js";
 
 /**
  * Builds fully-qualified URLs for the Routes of one Route Set, against one
  * Origin.
  */
 export type UrlTo<RouteSetName extends string> = <
-  R extends Route<{ readonly template: string }, string, RouteSetName>,
+  R extends Route<RouteDefinition, string, RouteSetName>,
 >(
   route: R,
   ...params: RouteParametersArgs<R>
