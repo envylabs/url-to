@@ -25,6 +25,15 @@ export function createUrlBuilder(
 
 /**
  * Creates a url-to for a Route Set and an Origin.
+ *
+ * @example
+ * ```ts
+ * const publicUrlTo = createUrlTo(api, "https://api.example.com");
+ * const internalUrlTo = createUrlTo(api, "http://api.internal:8080");
+ *
+ * publicUrlTo(api.Order, { orderId: "A-1" }); // "https://api.example.com/orders/A-1"
+ * internalUrlTo(api.Order, { orderId: "A-1" }); // "http://api.internal:8080/orders/A-1"
+ * ```
  */
 export function createUrlTo<RouteSetName extends string>(
   _routeSet: RouteSet<RouteSetName>,

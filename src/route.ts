@@ -49,6 +49,11 @@ type NextOptOut<Next extends false | undefined> = [Next] extends [false]
  * its Route Parameters and optional `meta`. The template must start with `/`
  * and use only supported RFC 6570 syntax; otherwise it is rejected at compile
  * time and throws a `TypeError` at runtime.
+ *
+ * @example
+ * ```ts
+ * route("/orders/{orderId}");
+ * ```
  */
 export function route<
   const Template extends `/${string}`,

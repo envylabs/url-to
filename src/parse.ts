@@ -30,6 +30,20 @@ export type ParseParamsResult<R extends Route> =
 /**
  * Validates incoming Route Parameters against a Route, e.g. a page's awaited
  * `params` and `searchParams`. Sources are merged left to right.
+ *
+ * @example
+ * ```ts
+ * const result = parseParams(
+ *   app.Orders,
+ *   { accountId: "acct_1" },
+ *   new URLSearchParams("page=2"),
+ * );
+ * // { success: true, data: { accountId: "acct_1", page: 2 } }
+ *
+ * if (!result.success) {
+ *   result.issues; // [{ path, message }, ...]
+ * }
+ * ```
  */
 export function parseParams<R extends Route>(
   route: R,
@@ -57,6 +71,16 @@ export function parseParams<R extends Route>(
 /**
  * Like {@link parseParams}, but returns the validated Route Parameters and
  * throws {@link UrlToError} when they're invalid.
+ *
+ * @example
+ * ```ts
+ * parseParamsOrThrow(
+ *   app.ItemSearch,
+ *   { id: "7" },
+ *   new URLSearchParams("q=lamp&tags=new&tags=sale&utm_source=email"),
+ * );
+ * // { id: "7", q: "lamp", tags: ["new", "sale"] }
+ * ```
  */
 export function parseParamsOrThrow<R extends Route>(
   route: R,

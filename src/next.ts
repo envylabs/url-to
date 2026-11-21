@@ -227,6 +227,15 @@ type TemplatePattern<
 
 /**
  * Creates a Next path-to for a Next Route Set.
+ *
+ * @example
+ * ```ts
+ * export const pathTo = createNextPathTo(web);
+ *
+ * pathTo(web.Item, { id: "42", tab: "reviews" }); // "/items/42?tab=reviews", typed as Next's Route
+ * pathTo(web.Docs, { slug: ["guides", "setup"] }); // "/docs/guides/setup"
+ * pathTo(web.Robots); // "/robots.txt", typed as string
+ * ```
  */
 export function createNextPathTo<RouteSetName extends string>(
   _routeSet: NextRouteSet<RouteSetName>,
@@ -244,6 +253,16 @@ export function createNextPathTo<RouteSetName extends string>(
  * basePath isn't empty or a path prefix that starts with `/`, doesn't end
  * with `/`, has no query or fragment, has only characters valid in a URL
  * path, and has no empty, `.` or `..` segments.
+ *
+ * @example
+ * ```ts
+ * const urlTo = createNextUrlTo(web, "https://www.example.com", {
+ *   basePath: "/app",
+ * });
+ *
+ * urlTo(web.Item, { id: "42" }); // "https://www.example.com/app/items/42"
+ * urlTo(web.Home); // "https://www.example.com/app"
+ * ```
  */
 export function createNextUrlTo<RouteSetName extends string>(
   _routeSet: NextRouteSet<RouteSetName>,
@@ -326,6 +345,17 @@ const rootSlash = /^\/(?=$|[?#])/u;
  * `/[[...x]]` when `x` is optional), and ends at the first query,
  * continuation or fragment, literal or expression. An optional `{/x}` has no
  * Next equivalent and is rejected.
+ *
+ * @example
+ * ```ts
+ * export const web = defineNextRouteSet("web", {
+ *   Docs: route("/docs{/slug*}"), // app/docs/[...slug]/page.tsx
+ *   Home: route("/"), // app/page.tsx
+ *   Item: route("/items/{id}{?tab}"), // app/items/[id]/page.tsx
+ *   Robots: route("/robots.txt", { next: false }), // not a Next route pattern
+ *   UserPost: route("/users/{userId}/posts/{postId}"), // app/users/[userId]/posts/[postId]/page.tsx
+ * });
+ * ```
  */
 export function defineNextRouteSet<
   const RouteSetName extends string,

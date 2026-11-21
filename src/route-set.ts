@@ -48,6 +48,14 @@ export type RouteSet<
  * and is branded with the Route Set. The name must be a string literal, and
  * should be unique within the application, as it is what tells Route Sets
  * apart at compile time.
+ *
+ * @example
+ * ```ts
+ * export const app = defineRouteSet("app", {
+ *   Home: route("/"),
+ *   Order: route("/orders/{orderId}"),
+ * });
+ * ```
  */
 export function defineRouteSet<
   const RouteSetName extends string,

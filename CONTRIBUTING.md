@@ -54,6 +54,8 @@ Tests live in `test/`. Files ending in `.test.ts` are runtime tests, and files e
 
 The README tests, runtime and type-level, mirror every README example. Change them in step with the README.
 
+Every `@example` in a doc comment must be copied from a README `ts` code block, as consecutive lines of one block. A test in `test/doc-examples.test.ts` enforces this, and requires an `@example` on each public runtime function.
+
 ## Commits
 
 Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). [release-please](https://github.com/googleapis/release-please) reads them to pick the next version: `feat` and `fix` drive the bump.
