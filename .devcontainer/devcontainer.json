@@ -42,6 +42,7 @@
     "EDITOR": "code --wait"
   },
   "remoteUser": "node",
+  "runArgs": ["--name", "envylabs-url-to"],
   "workspaceFolder": "/workspaces/url-to",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/url-to,type=bind"
 }
