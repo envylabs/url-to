@@ -33,10 +33,10 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 1. As an application developer, I want to declare each known destination once as a named Route, so that there is a single choke point for every path my app links to.
 2. As an application developer, I want to group Routes into a named Route Set, so that destinations served together (my app, a storefront, an admin console) are organized and discoverable.
 3. As an application developer, I want to define a Route with only a URI template, so that simple destinations take no ceremony.
-4. As an application developer, I want a Route with only a template to infer its Route Parameters from the template, so that `/pets/{id}` alone requires an `id` string with no schema.
+4. As an application developer, I want a Route with only a template to infer its Route Parameters from the template, so that `/items/{id}` alone requires an `id` string with no schema.
 5. As an application developer, I want to attach a Standard Schema to a Route's Route Parameters, so that I can enforce rules beyond "a string is present" (non-empty, enums, formats, coercion).
 6. As an application developer using Zod, Valibot, or ArkType, I want to use my existing validator, so that I don't adopt a second validation library.
-7. As an application developer, I want a compile error when my schema's keys don't match the template's variables, so that a typo like `{patientID}` against `patientId` is caught before runtime.
+7. As an application developer, I want a compile error when my schema's keys don't match the template's variables, so that a typo like `{itemID}` against `itemId` is caught before runtime.
 8. As an application developer, I want to attach arbitrary typed `meta` to a Route, so that I can build app-specific features (page titles, breadcrumbs, analytics names) on top of the Route.
 9. As an application developer, I want each Route to know its own name and its Route Set, so that error messages identify exactly which destination failed.
 10. As an application developer, I want to move a page by changing only its template, so that every call site follows automatically.
@@ -63,7 +63,7 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 28. As an application developer, I want to pass arrays and records to explode-capable expressions (e.g. `{?tags*}`), so that multi-valued query parameters work.
 29. As an application developer, I want a compile error when I pass an array or record to an expression that can't represent it, so that I don't produce malformed URLs.
 30. As an application developer, I want undefined optional values left out cleanly from query, continuation, path-segment, path-style, label, and fragment expressions, so that optional parameters don't leave stray separators.
-31. As an application developer, I want a compile error when an optional Route Parameter appears in a simple or reserved expression (e.g. a bare `{id}` path segment), so that a missing value can never produce a path like `/pets/`.
+31. As an application developer, I want a compile error when an optional Route Parameter appears in a simple or reserved expression (e.g. a bare `{id}` path segment), so that a missing value can never produce a path like `/items/`.
 32. As an application developer, I want an empty string in a query value to follow RFC 6570 (producing `?email=`), so that the behaviour is predictable and documented.
 33. As an application developer, I want template-only Routes to reject empty strings for path-type variables at runtime, so that inferred parameters still give known-good URLs without a schema.
 34. As an application developer, I want url-to to return a plain string, so that the result drops into `href`, `fetch`, `redirect`, and string interpolation with no conversion.
@@ -93,7 +93,7 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 49. As a non-Next developer, I want `next` to be an optional peer dependency, so that installing the package doesn't pull in or warn about Next.
 50. As a Next.js developer, I want to register my app's generated `ParamMap` once, so that every Next Route Set is checked against my real route patterns with no per-definition boilerplate.
 51. As a Next.js developer, I want a compile error when a Route's template doesn't match any Next route pattern, so that moving or deleting a page without updating its Route fails the build.
-52. As a Next.js developer, I want a compile error when a template's variable names don't match the Next route pattern's segment names, so that `{petId}` against `[patientId]` is caught.
+52. As a Next.js developer, I want a compile error when a template's variable names don't match the Next route pattern's segment names, so that `{itemId}` against `[id]` is caught.
 53. As a Next.js developer, I want catch-all and optional catch-all segments supported (exploded path-segment expressions map to `[...x]` and `[[...x]]`), so that every Next route shape can be modelled.
 54. As a Next.js developer, I want query and fragment expressions ignored when matching against Next route patterns, so that search params don't affect pattern matching.
 55. As a Next.js developer, I want the Next path-to to return Next's `Route` type, so that the result is accepted by `Link`'s `href`, `router.push`, `redirect`, and `Form`'s `action` when `typedRoutes` is on.

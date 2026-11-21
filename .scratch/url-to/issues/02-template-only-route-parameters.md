@@ -1,6 +1,6 @@
 # 02: Template-only Route Parameters (simple expressions)
 
-**What to build:** A developer can define `route("/pets/{id}")` with no schema and call `pathTo(set.Pet, { id })`. The required Route Parameters are inferred from the template and values are URI-escaped. Bad input throws a `UrlToError` that never includes values. This adds the internal RFC 6570 engine and template type parser, for simple expressions only (ADR-0002).
+**What to build:** A developer can define `route("/items/{id}")` with no schema and call `pathTo(set.Item, { id })`. The required Route Parameters are inferred from the template and values are URI-escaped. Bad input throws a `UrlToError` that never includes values. This adds the internal RFC 6570 engine and template type parser, for simple expressions only (ADR-0002).
 
 **Blocked by:** 01
 
