@@ -13,6 +13,7 @@ const shop = defineRouteSet("shop", {
   Item: route("/items/{id}", {
     params: z.object({ id: z.string().transform((id) => id.length) }),
   }),
+  Search: route("/search{?q,tags*}"),
   User: route("/users/{userId}{?tab}"),
 });
 
@@ -36,6 +37,12 @@ describe("parseParams types", () => {
         userId: string;
       }>();
     }
+  });
+
+  it("types an exploded template-only variable as a string or list of strings", () => {
+    expectTypeOf(
+      parseParamsOrThrow(shop.Search, new URLSearchParams("tags=a")),
+    ).toEqualTypeOf<{ q?: string; tags?: string | string[] }>();
   });
 
   it("accepts Next-style records and URLSearchParams as sources", () => {

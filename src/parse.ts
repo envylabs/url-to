@@ -2,7 +2,10 @@ import { UrlToError, type UrlToIssue } from "./errors.js";
 import type { RouteParametersOutput } from "./params.js";
 import type { Route } from "./route-set.js";
 import { parseTemplate } from "./template/engine.js";
-import { validateRouteParameters } from "./validate.js";
+import {
+  type RouteParametersResult,
+  validateRouteParameters,
+} from "./validate.js";
 
 /**
  * Where incoming Route Parameters come from: a plain record or
@@ -33,14 +36,22 @@ export function parseParams<R extends Route>(
   ...sources: readonly ParamsSource[]
 ): ParseParamsResult<R> {
   const merged = mergeSources(sources);
-  const result = validateRouteParameters(
-    route,
-    route.params === undefined ? pickTemplateVariables(route, merged) : merged,
-  );
+  if (route.params !== undefined) {
+    return toParseResult(validateRouteParameters(route, merged));
+  }
 
-  return result.success
-    ? { data: result.output as RouteParametersOutput<R>, success: true }
-    : { issues: result.issues, success: false };
+  const { issues, values } = pickParsedValues(route, merged);
+  const result = validateRouteParameters(route, values);
+  if (issues.length === 0) {
+    return toParseResult(result);
+  }
+
+  // A key left out for its type would also be reported as missing.
+  const reported = new Set(issues.map(({ path }) => path[0]));
+  const others = result.success
+    ? []
+    : result.issues.filter(({ path }) => !reported.has(path[0]));
+  return { issues: [...issues, ...others], success: false };
 }
 
 /**
@@ -58,6 +69,10 @@ export function parseParamsOrThrow<R extends Route>(
   }
 
   return result.data;
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === "string";
 }
 
 function mergeSources(
@@ -81,17 +96,49 @@ function mergeSources(
 
 /**
  * Keeps only the template's variables, so that unrelated search params don't
- * fail a template-only Route. A schema Route leaves unknown keys to its schema.
+ * fail a template-only Route (a schema Route leaves unknown keys to its
+ * schema), and reports values a template-only Route can't parse to: anything
+ * but a string, or a list of strings for a variable exploded everywhere it
+ * appears.
  */
-function pickTemplateVariables(
+function pickParsedValues(
   route: Route,
   values: Readonly<Record<string, unknown>>,
-): Record<string, unknown> {
-  const names = new Set(
-    parseTemplate(route.template).variables.map(({ name }) => name),
-  );
+): { issues: UrlToIssue[]; values: Record<string, unknown> } {
+  const explodedOnly = new Map<string, boolean>();
+  for (const { explode, name } of parseTemplate(route.template).variables) {
+    explodedOnly.set(name, (explodedOnly.get(name) ?? true) && explode);
+  }
 
-  return Object.fromEntries(
-    Object.entries(values).filter(([name]) => names.has(name)),
-  );
+  const issues: UrlToIssue[] = [];
+  const picked: Record<string, unknown> = {};
+  for (const [name, value] of Object.entries(values)) {
+    const exploded = explodedOnly.get(name);
+    if (exploded === undefined || value === undefined) {
+      continue;
+    }
+    if (
+      typeof value === "string" ||
+      (exploded && Array.isArray(value) && value.every(isString))
+    ) {
+      picked[name] = value;
+    } else {
+      issues.push({
+        message: exploded
+          ? "must be a string or list of strings"
+          : "must be a string",
+        path: [name],
+      });
+    }
+  }
+
+  return { issues, values: picked };
+}
+
+function toParseResult<R extends Route>(
+  result: RouteParametersResult,
+): ParseParamsResult<R> {
+  return result.success
+    ? { data: result.output as RouteParametersOutput<R>, success: true }
+    : { issues: result.issues, success: false };
 }
