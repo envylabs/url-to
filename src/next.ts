@@ -223,7 +223,8 @@ export function createNextPathTo<RouteSetName extends string>(
  *
  * @throws TypeError when the Origin is invalid (as for `createUrlTo`), or the
  * basePath isn't empty or a path prefix that starts with `/`, doesn't end
- * with `/`, and has no query or fragment.
+ * with `/`, has no query or fragment, has only characters valid in a URL
+ * path, and has no empty, `.` or `..` segments.
  */
 export function createNextUrlTo<RouteSetName extends string>(
   _routeSet: NextRouteSet<RouteSetName>,
@@ -248,8 +249,9 @@ function invalidBasePath(reason: string): TypeError {
 
 /**
  * Validates a basePath by Next's rules: empty for none, or a path prefix that
- * starts with `/` and doesn't end with one. It is a path, so a query or
- * fragment is rejected too.
+ * starts with `/` and doesn't end with one. It is a path, so a query,
+ * fragment, character that isn't valid unescaped in a path, or empty, `.` or
+ * `..` segment is rejected too.
  *
  * @throws TypeError when the basePath breaks one of those rules.
  */
@@ -274,9 +276,26 @@ function parseBasePath(basePath: string): string {
   if (basePath.includes("#")) {
     throw invalidBasePath("must not include a fragment");
   }
+  if (!pathCharacters.test(basePath)) {
+    throw invalidBasePath("must only contain characters valid in a URL path");
+  }
+
+  const segments = basePath.slice(1).split("/");
+  if (segments.includes("")) {
+    throw invalidBasePath("must not include empty segments");
+  }
+  if (segments.some((segment) => segment === "." || segment === "..")) {
+    throw invalidBasePath("must not include . or .. segments");
+  }
 
   return basePath;
 }
+
+/**
+ * Characters allowed unescaped in a URL path (RFC 3986 `pchar` and `/`), and
+ * percent-encoded octets.
+ */
+const pathCharacters = /^(?:[\w\-.~!$&'()*+,;=:@/]|%[\dA-Fa-f]{2})*$/u;
 
 /** The slash of the root path, before any query or fragment. */
 const rootSlash = /^\/(?=$|[?#])/u;

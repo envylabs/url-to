@@ -160,6 +160,12 @@ describe("createNextUrlTo", () => {
     ["/docs-site?a=1", "must not include a query"],
     ["/docs-site#top", "must not include a fragment"],
     ["https://example.com/docs-site", "must start with /"],
+    ["/docs site", "must only contain characters valid in a URL path"],
+    ["/docs%2", "must only contain characters valid in a URL path"],
+    ["/caf\u00e9", "must only contain characters valid in a URL path"],
+    ["/apps//docs", "must not include empty segments"],
+    ["/apps/./docs", "must not include . or .. segments"],
+    ["/apps/..", "must not include . or .. segments"],
   ])(
     "rejects the basePath %j when the url-to is created",
     (basePath, reason) => {
@@ -168,6 +174,16 @@ describe("createNextUrlTo", () => {
       ).toThrow(new TypeError(`Invalid basePath: ${reason}`));
     },
   );
+
+  it("accepts a basePath with percent-encoded and sub-delimiter characters", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/caf%C3%A9/v1.2/a-b_c~d!$&'()*+,;=:@",
+    });
+
+    expect(urlTo(web.About)).toBe(
+      "https://example.com/caf%C3%A9/v1.2/a-b_c~d!$&'()*+,;=:@/about",
+    );
+  });
 
   it("keeps a nested basePath as written", () => {
     const urlTo = createNextUrlTo(web, "https://example.com", {

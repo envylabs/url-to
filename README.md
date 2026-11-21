@@ -453,7 +453,7 @@ urlTo(web.Item, { id: "42" }); // "https://www.example.com/shop/items/42"
 urlTo(web.Home); // "https://www.example.com/shop"
 ```
 
-The Origin follows the [same rules](#building-urls-url-to-and-origins) as `createUrlTo`. The `basePath` must match your `next.config`: empty or left out for none, otherwise starting with `/`, not ending with `/`, and with no query or fragment. As in Next, the root Route under a `basePath` is the `basePath` itself, with no trailing slash. The url-to returns a plain `string`.
+The Origin follows the [same rules](#building-urls-url-to-and-origins) as `createUrlTo`. The `basePath` must match your `next.config`: empty or left out for none, otherwise starting with `/`, not ending with `/`, with no query or fragment, with only characters valid unescaped in a URL path (percent-encode anything else), and with no empty, `.`, or `..` segments. As in Next, the root Route under a `basePath` is the `basePath` itself, with no trailing slash. The url-to returns a plain `string`.
 
 ### Next.js version notes
 
