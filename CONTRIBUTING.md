@@ -48,6 +48,24 @@ publint inspects the build output, so run `npm run build` first. `npm run check:
 
 CI also runs the tests on every Node.js version the package supports, listed in the test matrix in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). The other checks run on the version in `.tool-versions`.
 
+## Tests
+
+Tests live in `test/`. Files ending in `.test.ts` are runtime tests, and files ending in `.test-d.ts` are type-level tests, which `npm test` typechecks rather than runs.
+
+The README tests, runtime and type-level, mirror every README example. Change them in step with the README.
+
+## Commits
+
+Commit messages follow [Conventional Commits](https://www.conventionalcommits.org). [release-please](https://github.com/googleapis/release-please) reads them to pick the next version: `feat` and `fix` drive the bump.
+
+PRs are squash-merged, so the PR title becomes the commit message release-please sees. Write the PR title as a Conventional Commit too.
+
+## Style
+
+- Prose, comments and docs use US English. British spellings are typos.
+- Examples use generic names (items, users, `app`/`admin`/`api`), never animals or storefronts.
+- Code comments say what a thing provides, not how it's used. Skip obvious ones.
+
 ## Changing the Node.js version
 
 The Dev Container's Node.js version (the `FROM` line in `.devcontainer/Dockerfile`) and `.tool-versions` must change together. A test in `test/devcontainer.test.ts` fails if they disagree, so `npm test` catches a missed update.
