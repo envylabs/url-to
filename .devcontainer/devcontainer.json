@@ -3,6 +3,9 @@
   "build": {
     "dockerfile": "Dockerfile"
   },
+  "containerEnv": {
+    "CLAUDE_CONFIG_DIR": "/home/node/.claude"
+  },
   "customizations": {
     "vscode": {
       "extensions": [
@@ -13,7 +16,21 @@
       ]
     }
   },
+  "features": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
   "mounts": [
+    {
+      "source": "url-to-claude-config-${devcontainerId}",
+      "target": "/home/node/.claude",
+      "type": "volume"
+    },
+    {
+      "source": "url-to-gh-config-${devcontainerId}",
+      "target": "/home/node/.config/gh",
+      "type": "volume"
+    },
     {
       "source": "url-to-node_modules-${devcontainerId}",
       "target": "/workspaces/url-to/node_modules",

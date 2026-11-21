@@ -23,4 +23,9 @@ RUN make -C /usr/share/doc/git/contrib/diff-highlight \
   && git config --system core.pager "diff-highlight | less" \
   && git config --system interactive.diffFilter diff-highlight
 
+# Mount points for the Claude Code and GitHub CLI config volumes, owned by node
+# so the volumes start with the right owner.
+RUN mkdir -p /home/node/.claude /home/node/.config/gh \
+  && chown -R node:node /home/node/.claude /home/node/.config
+
 USER node
