@@ -22,7 +22,7 @@ export type CheckTemplate<Template extends string> = [
  * operator's character here when it is added to `operators` in
  * `./operators.ts`.
  */
-export type Operator = "";
+export type Operator = ";" | "?" | "." | "" | "/" | "&" | "#" | "+";
 
 export type ParseTemplate<Template extends string> =
   Template extends `${infer Literal}{${infer Rest}`
@@ -37,20 +37,44 @@ export type ParseTemplate<Template extends string> =
       ? TemplateError<'unmatched "}"'>
       : never;
 
+/**
+ * Operators in which a missing value would produce a broken path. Template-only
+ * variables in these positions are required; elsewhere (query, continuation
+ * and fragment) they are optional. Mirrors `pathType` in `./operators.ts`.
+ */
+export type PathTypeOperator = ";" | "." | "" | "/" | "+";
+
+/**
+ * Operators in which an optional Route Parameter is a compile error, because
+ * leaving the value out would leave an empty path segment (e.g. `/items/`).
+ */
+export type RequiredValueOperator = "" | "+";
+
 /** A template syntax problem, surfaced in the compiler's error message. */
 export interface TemplateError<Message extends string = string> {
   readonly "Invalid Route template": Message;
 }
 
 /**
- * The Route Parameters inferred from a template: every variable is a required
- * string.
+ * The Route Parameters inferred from a template. A variable is a required
+ * string if any of its occurrences is in a path-type expression, otherwise an
+ * optional one.
  */
-export type TemplateParameters<Template extends string> = {
-  [
-    Variable in TemplateVariables<Template> as Variable["name"]
-  ]: ParameterValue<Variable>;
-};
+export type TemplateParameters<Template extends string> = Simplify<
+  {
+    [
+      Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
+        ? never
+        : Variable["name"]
+    ]?: ParameterValue<Variable>;
+  } & {
+    [
+      Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
+        ? Variable["name"]
+        : never
+    ]: ParameterValue<Variable>;
+  }
+>;
 
 /** A variable in a template expression. */
 export interface TemplateVariable<
@@ -60,6 +84,16 @@ export interface TemplateVariable<
   readonly name: Name;
   readonly operator: Op;
 }
+
+/**
+ * Names of the template's variables that appear in at least one expression
+ * whose operator is in `Op`. With the default, the names a template-only Route
+ * requires.
+ */
+export type TemplateVariableNames<
+  Template extends string,
+  Op extends Operator = PathTypeOperator,
+> = Extract<TemplateVariables<Template>, { readonly operator: Op }>["name"];
 
 /** The template's variables, as a union of `TemplateVariable`s. */
 export type TemplateVariables<Template extends string> = Extract<
@@ -139,10 +173,14 @@ type ParseVarlist<
 type ParseVarspec<
   Varspec extends string,
   Op extends Operator,
-> = Varspec extends `${string}${":" | "*"}${string}`
-  ? TemplateError<`unsupported modifier in "${Varspec}"`>
-  : IsVarname<Varspec> extends true
-    ? TemplateVariable<Varspec, Op>
-    : TemplateError<`invalid variable name "${Varspec}"`>;
+> = Varspec extends `${string}:${string}`
+  ? TemplateError<`prefix modifiers are not supported in "${Varspec}"`>
+  : Varspec extends `${string}*${string}`
+    ? TemplateError<`unsupported modifier in "${Varspec}"`>
+    : IsVarname<Varspec> extends true
+      ? TemplateVariable<Varspec, Op>
+      : TemplateError<`invalid variable name "${Varspec}"`>;
+
+type Simplify<T> = { [Key in keyof T]: T[Key] } & {};
 
 type Varchar = "_" | Digit | Lowercase | Uppercase<Lowercase>;

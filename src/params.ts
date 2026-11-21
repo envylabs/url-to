@@ -11,7 +11,12 @@ export type RouteParameters<R extends RouteDefinition> = TemplateParameters<
 
 /**
  * The arguments that follow the Route in a path-to or url-to call: none when
- * the Route has no Route Parameters, otherwise a required params object.
+ * the Route has no Route Parameters, an optional params object when every
+ * Route Parameter is optional, otherwise a required params object.
  */
 export type RouteParametersArgs<R extends RouteDefinition> =
-  keyof RouteParameters<R> extends never ? [] : [params: RouteParameters<R>];
+  keyof RouteParameters<R> extends never
+    ? []
+    : Partial<RouteParameters<R>> extends RouteParameters<R>
+      ? [params?: RouteParameters<R>]
+      : [params: RouteParameters<R>];
