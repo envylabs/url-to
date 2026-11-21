@@ -1,0 +1,17 @@
+{
+  "//": "Type-checks the source and type tests with the minimum supported TypeScript (5.5). Standalone because 5.5 rejects newer compiler options.",
+  "compilerOptions": {
+    "isolatedModules": true,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noEmit": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "ES2022",
+    "types": [],
+    "verbatimModuleSyntax": true
+  },
+  "include": ["src/**/*.ts", "test/**/*.test-d.ts", "test/fixtures/**/*.ts"]
+}

@@ -1,0 +1,47 @@
+---
+jobs:
+  deploy:
+    if: "${{ needs.release-please.outputs.release_created }}"
+    name: "Deploy"
+    needs:
+      - "release-please"
+    permissions:
+      contents: "read"
+      id-token: "write"
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: "actions/checkout@v7"
+      # Node 26 (from .tool-versions) bundles npm 11.x, which is new enough
+      # (>= 11.5.1) for npm trusted publishing via OIDC.
+      - uses: "actions/setup-node@v7"
+        with:
+          cache: "npm"
+          node-version-file: ".tool-versions"
+          registry-url: "https://registry.npmjs.org"
+      - run: "npm ci --ignore-scripts --no-audit --no-fund --no-update-notifier"
+      - run: "npm run build"
+      - run: "npm publish"
+
+  release-please:
+    name: "Release"
+    outputs:
+      release_created: "${{ steps.release.outputs.release_created }}"
+      tag_name: "${{ steps.release.outputs.tag_name }}"
+    permissions:
+      contents: "write"
+      issues: "write"
+      pull-requests: "write"
+    runs-on: "ubuntu-latest"
+    steps:
+      - id: "release"
+        uses: "googleapis/release-please-action@v5"
+        with:
+          config-file: ".github/release-please-config.json"
+          manifest-file: ".github/release-please-manifest.json"
+
+"on":
+  push:
+    branches:
+      - "main"
+
+name: "Release"
