@@ -211,7 +211,7 @@ function runSchema(
     // Don't leave a rejected promise unhandled.
     result.catch(() => undefined);
     throw new TypeError(
-      `The Route Parameters schema for Route ${JSON.stringify(route.name)} in Route Set ${JSON.stringify(route.routeSetName)} validates asynchronously; paths and URLs are built synchronously, so use a synchronous schema`,
+      `The Route Parameters schema for Route ${JSON.stringify(route.name)} in Route Set ${JSON.stringify(route.routeSetName)} validates asynchronously; Route Parameters are validated synchronously when building and parsing, so use a synchronous schema`,
     );
   }
 

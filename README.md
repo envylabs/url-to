@@ -238,7 +238,7 @@ route("/orders/{orderId}", {
 
 As a runtime safety net, an output key that isn't a template variable (for example, one a transform adds) throws a `UrlToError`, so keys left behind after moving a Route are caught.
 
-**Schemas must validate synchronously.** Paths and URLs are built synchronously, so a schema whose validation returns a Promise (for example, one with an async refinement) throws a `TypeError` naming the Route when it is used.
+**Schemas must validate synchronously.** Route Parameters are validated synchronously, both when building paths and URLs and when parsing, so a schema whose validation returns a Promise (for example, one with an async refinement) throws a `TypeError` naming the Route when it is used.
 
 ## meta
 

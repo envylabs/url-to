@@ -199,7 +199,7 @@ describe("Routes with a Standard Schema", () => {
 
     expect(() => pathTo(remote.Item, { id: "7" })).toThrow(
       new TypeError(
-        'The Route Parameters schema for Route "Item" in Route Set "remote" validates asynchronously; paths and URLs are built synchronously, so use a synchronous schema',
+        'The Route Parameters schema for Route "Item" in Route Set "remote" validates asynchronously; Route Parameters are validated synchronously when building and parsing, so use a synchronous schema',
       ),
     );
   });

@@ -210,7 +210,7 @@ describe("parsing with an async schema", () => {
       }),
     });
     const error = new TypeError(
-      'The Route Parameters schema for Route "Item" in Route Set "remote" validates asynchronously; paths and URLs are built synchronously, so use a synchronous schema',
+      'The Route Parameters schema for Route "Item" in Route Set "remote" validates asynchronously; Route Parameters are validated synchronously when building and parsing, so use a synchronous schema',
     );
 
     expect(() => parseParams(remote.Item, { id: "7" })).toThrow(error);
