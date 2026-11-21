@@ -8,6 +8,10 @@ Typed, validated construction of known paths and URLs, for an application's own 
 A named, known destination: a URI template plus an optional schema for the values that fill it. It may be a page, an API endpoint, or a file, local or external.
 _Avoid_: Page, Destination, Endpoint, Path definition
 
+**Route Definition**:
+A Route before it belongs to a Route Set: its template, optional schema, and data, with no name yet. Placing it in a Route Set names it and makes it a Route of that Route Set.
+_Avoid_: Unnamed route, Route spec, Route config
+
 **Route Parameters**:
 The values that fill a Route's template, covering both path segments and query values.
 _Avoid_: Path parameters, Template arguments, Args
