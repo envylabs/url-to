@@ -1,3 +1,6 @@
+export type { UrlToIssue } from "./errors.js";
+export { UrlToError } from "./errors.js";
+export type { RouteParameters } from "./params.js";
 export type { PathTo } from "./path-to.js";
 export { createPathTo } from "./path-to.js";
 export type { Route, RouteSet } from "./route-set.js";

@@ -1,10 +1,15 @@
+import { buildPath } from "./build.js";
+import type { RouteParametersArgs } from "./params.js";
 import type { Route, RouteSet } from "./route-set.js";
 
 /**
  * Builds origin-less paths for the Routes of one Route Set.
  */
-export type PathTo<RouteSetName extends string> = (
-  route: Route<{ readonly template: string }, string, RouteSetName>,
+export type PathTo<RouteSetName extends string> = <
+  R extends Route<{ readonly template: string }, string, RouteSetName>,
+>(
+  route: R,
+  ...params: RouteParametersArgs<R>
 ) => string;
 
 /**
@@ -13,5 +18,5 @@ export type PathTo<RouteSetName extends string> = (
 export function createPathTo<RouteSetName extends string>(
   _routeSet: RouteSet<RouteSetName>,
 ): PathTo<RouteSetName> {
-  return (route) => route.template;
+  return (route, ...[params]) => buildPath(route, params);
 }
