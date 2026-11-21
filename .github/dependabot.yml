@@ -1,5 +1,10 @@
 updates:
   - directory: "/"
+    ignore:
+      # typescript-eslint supports TypeScript < 6.1.
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
     open-pull-requests-limit: 10
     package-ecosystem: "npm"
     schedule:
