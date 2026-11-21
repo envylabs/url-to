@@ -134,16 +134,23 @@ type NextPattern<Definition extends RouteDefinition> = TemplatePattern<
 type OperatorCharacter =
   "," | ";" | "!" | "?" | "." | "@" | "/" | "&" | "#" | "+" | "=" | "|";
 
-/** A problem with the registration itself, or `never`. */
-type ParamMapProblem = [RegisteredParamMap] extends [never]
-  ? {
-      readonly "Register the app's ParamMap with the Register interface of @envylabs/url-to/next": never;
-    }
-  : 0 extends 1 & RegisteredParamMap
+/**
+ * A problem with the registration itself, or `never`. A ParamMap whose keys
+ * aren't literal patterns would accept every template, so it is rejected. That
+ * covers `any`, including the error type an unresolved import in a `.d.ts`
+ * becomes under `skipLibCheck` (before `next typegen` has run). The error type
+ * can't be the checked type of a conditional (the result is `any`), so only
+ * `Register` and `string` are.
+ */
+type ParamMapProblem = Register extends { readonly paramMap: unknown }
+  ? string extends keyof RegisteredParamMap
     ? {
-        readonly "The registered ParamMap is any: run next typegen and import it from a .ts file": never;
+        readonly "The registered ParamMap has no literal Next route patterns: run next typegen, and register it from a .ts file": never;
       }
-    : never;
+    : never
+  : {
+      readonly "Register the app's ParamMap with the Register interface of @envylabs/url-to/next": never;
+    };
 
 type RegisteredParamMap = Register extends { paramMap: infer ParamMap }
   ? ParamMap
