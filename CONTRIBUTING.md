@@ -17,7 +17,7 @@ Open the repository and choose **Reopen in Container**. Once it's running, sign 
 gh auth login
 ```
 
-You only need to do this once. The sign-in is kept in a volume, so it survives container rebuilds.
+You only need to do this once. The sign-in is kept in a volume, so it survives container rebuilds. The volumes holding the GitHub CLI and Claude Code sign-ins and `node_modules` are per container, so a separate clone or worktree starts fresh.
 
 ## Setup without the container
 
@@ -46,7 +46,7 @@ CI runs these checks on every push and pull request. Run them locally before pus
 
 publint inspects the build output, so run `npm run build` first. `npm run check:package` runs both package checks.
 
-CI also runs the tests on every Node.js version the package supports (22, 24 and 26). The other checks run on the version in `.tool-versions`.
+CI also runs the tests on every Node.js version the package supports, listed in the test matrix in [`.github/workflows/ci.yml`](.github/workflows/ci.yml). The other checks run on the version in `.tool-versions`.
 
 ## Changing the Node.js version
 

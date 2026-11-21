@@ -1,3 +1,4 @@
+// cspell:ignore s3cret
 import { describe, expect, it } from "vitest";
 
 import { createUrlTo, UrlToError } from "../src/index.js";
