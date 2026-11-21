@@ -8,9 +8,16 @@ RUN apt-get update \
     ca-certificates \
     curl \
     less \
+    locales \
     perl \
     sudo \
   && rm -rf /var/lib/apt/lists/*
+
+# Generates the locale that VS Code forwards from a typical host, so shells
+# don't warn that they can't set it.
+RUN sed -i 's/^# *\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen \
+  && locale-gen
+ENV LANG=en_US.UTF-8
 
 RUN echo "node ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/node \
   && chmod 0440 /etc/sudoers.d/node
