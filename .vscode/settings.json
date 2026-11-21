@@ -1,0 +1,28 @@
+{
+  "cSpell.ignoreRegExpList": ["/%[0-9A-Fa-f]{2}/g"],
+  "cSpell.ignoreWords": ["barvalue", "s3cret"],
+  "cSpell.words": [
+    "actioned",
+    "attw",
+    "dbaeumer",
+    "envylabs",
+    "esbenp",
+    "mattpocock",
+    "pchar",
+    "publint",
+    "unmappable",
+    "varchars",
+    "varlist",
+    "varspec",
+    "wayfinder",
+    "wayfinding"
+  ],
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "prettier.requireConfig": true,
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

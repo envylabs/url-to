@@ -243,7 +243,7 @@ describe("RFC 6570 level 4 list and map examples", () => {
       Example: route(`/${template}` as "/"),
     });
     // Non-exploded lists and records are a compile error, so call the
-    // path-to untyped to check the engine's RFC behaviour.
+    // path-to untyped to check the engine's RFC behavior.
     const pathTo = createPathTo(rfc) as (
       route: unknown,
       params: Record<string, unknown>,
