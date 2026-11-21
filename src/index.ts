@@ -7,3 +7,5 @@ export type { Route, RouteSet } from "./route-set.js";
 export { defineRouteSet } from "./route-set.js";
 export type { RouteDefinition } from "./route.js";
 export { route } from "./route.js";
+export type { UrlTo } from "./url-to.js";
+export { createUrlTo } from "./url-to.js";
