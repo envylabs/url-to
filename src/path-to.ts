@@ -1,5 +1,5 @@
 import { buildPath } from "./build.js";
-import type { RouteParametersArgs } from "./params.js";
+import type { RouteParametersInput } from "./params.js";
 import type { Route, RouteSet } from "./route-set.js";
 import type { RouteDefinition } from "./route.js";
 
@@ -10,7 +10,7 @@ export type PathTo<RouteSetName extends string> = <
   R extends Route<RouteDefinition, string, RouteSetName>,
 >(
   route: R,
-  ...params: RouteParametersArgs<R>
+  ...params: RouteParametersInput<R>
 ) => string;
 
 /**

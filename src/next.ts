@@ -6,7 +6,7 @@ import type { Route as NextRoute } from "next";
 
 import { buildPath } from "./build.js";
 import { parseOrigin } from "./origin.js";
-import type { RouteParametersArgs, RouteParametersOutput } from "./params.js";
+import type { RouteParametersInput, RouteParametersOutput } from "./params.js";
 import {
   defineRouteSet,
   type LiteralName,
@@ -26,7 +26,7 @@ export type NextPathTo<RouteSetName extends string> = <
   R extends Route<RouteDefinition, string, RouteSetName>,
 >(
   route: R,
-  ...params: RouteParametersArgs<R>
+  ...params: RouteParametersInput<R>
 ) => R extends { readonly next: false } ? string : NextRoute;
 
 /**
@@ -51,7 +51,7 @@ export type NextUrlTo<RouteSetName extends string> = <
   R extends Route<RouteDefinition, string, RouteSetName>,
 >(
   route: R,
-  ...params: RouteParametersArgs<R>
+  ...params: RouteParametersInput<R>
 ) => string;
 
 /**

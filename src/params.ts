@@ -48,7 +48,7 @@ export type RouteParameters<R extends RouteDefinition> =
  * the Route has no Route Parameters, an optional params object when every
  * Route Parameter is optional, otherwise a required params object.
  */
-export type RouteParametersArgs<R extends RouteDefinition> =
+export type RouteParametersInput<R extends RouteDefinition> =
   keyof RouteParameters<R> extends never
     ? []
     : Partial<RouteParameters<R>> extends RouteParameters<R>
