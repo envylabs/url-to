@@ -1,7 +1,7 @@
 /**
  * The RFC 6570 operators the engine supports, keyed by their operator
  * character (`""` for a simple expression). Each entry carries the expansion
- * behaviour from RFC 6570 Appendix A, plus `pathType`, which marks positions
+ * behavior from RFC 6570 Appendix A, plus `pathType`, which marks positions
  * where a missing or empty value would produce a broken path.
  *
  * Adding an operator means adding an entry here and its character to
