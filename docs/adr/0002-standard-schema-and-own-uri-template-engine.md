@@ -8,4 +8,4 @@ Prefix modifiers (`{var:3}`) are deliberately not supported: they silently trunc
 
 - **Zod as a peer dependency**: simpler types, but tied to one validator and its major versions.
 - **`uri-templates`**: CommonJS and unmaintained.
-- **`url-template`**: maintained ESM, but its runtime behaviour could drift from our type-level parser.
+- **`url-template`**: maintained ESM, but its runtime behavior could drift from our type-level parser.
