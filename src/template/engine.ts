@@ -146,7 +146,10 @@ function parseExpression(
     .slice(operatorCharacter.length)
     .split(",")
     .map((varspec): TemplateVariable => {
-      if (varspec.includes("*") || varspec.includes(":")) {
+      if (varspec.includes(":")) {
+        invalid(template, `prefix modifiers are not supported in "${varspec}"`);
+      }
+      if (varspec.includes("*")) {
         invalid(template, `unsupported modifier in "${varspec}"`);
       }
       if (!varnamePattern.test(varspec)) {
