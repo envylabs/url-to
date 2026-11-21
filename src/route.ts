@@ -1,3 +1,5 @@
+import type { CheckParamsSchema } from "./params.js";
+import type { StandardSchemaV1 } from "./standard-schema.js";
 import { parseTemplate } from "./template/engine.js";
 import type { CheckTemplate } from "./template/types.js";
 
@@ -5,19 +7,56 @@ import type { CheckTemplate } from "./template/types.js";
  * An unnamed Route, as returned by {@link route}. It becomes a {@link Route}
  * once it is placed in a Route Set with {@link defineRouteSet}.
  */
-export interface RouteDefinition<Template extends string = string> {
+export interface RouteDefinition<
+  Template extends string = string,
+  Params extends StandardSchemaV1 | undefined = StandardSchemaV1 | undefined,
+  Meta = unknown,
+> {
+  /** App-specific data attached to the Route, with its literal type. */
+  readonly meta: Meta;
+  /** The Standard Schema for the Route Parameters, if any. */
+  readonly params: Params;
   /** The RFC 6570 URI template. Always starts with `/`. */
   readonly template: Template;
 }
 
 /**
- * Declares a Route from its URI template. The template must start with `/`
+ * The RouteDefinition {@link route} returns. An option that was left out
+ * infers as its constraint, so it is narrowed back to `undefined`.
+ */
+type DeclaredRoute<
+  Template extends string,
+  Params extends StandardSchemaV1 | undefined,
+  Meta,
+> = RouteDefinition<
+  Template,
+  [StandardSchemaV1 | undefined] extends [Params] ? undefined : Params,
+  unknown extends Meta ? undefined : Meta
+>;
+
+/**
+ * Declares a Route from its URI template, with an optional Standard Schema for
+ * its Route Parameters and optional `meta`. The template must start with `/`
  * and use only supported RFC 6570 syntax; otherwise it is rejected at compile
  * time and throws a `TypeError` at runtime.
  */
-export function route<const Template extends `/${string}`>(
+export function route<
+  const Template extends `/${string}`,
+  Params extends StandardSchemaV1 | undefined = undefined,
+  const Meta = undefined,
+>(
   template: CheckTemplate<Template> & Template,
-): RouteDefinition<Template> {
+  options?: {
+    /** App-specific data, kept with its literal type. */
+    readonly meta?: Meta;
+    /**
+     * A Standard Schema for the Route Parameters. Its output keys must match
+     * the template's variables. Arguments take its input type, and the
+     * template is filled from its output.
+     */
+    readonly params?: CheckParamsSchema<Template, Params> & Params;
+  },
+): DeclaredRoute<Template, Params, Meta> {
   if (!template.startsWith("/")) {
     throw new TypeError(
       `Route templates must start with "/": received ${JSON.stringify(template)}`,
@@ -26,5 +65,9 @@ export function route<const Template extends `/${string}`>(
 
   parseTemplate(template);
 
-  return Object.freeze({ template });
+  return Object.freeze({
+    meta: options?.meta,
+    params: options?.params,
+    template,
+  }) as DeclaredRoute<Template, Params, Meta>;
 }

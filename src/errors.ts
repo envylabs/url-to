@@ -27,7 +27,11 @@ export class UrlToError extends Error {
   constructor(route: Route, issues: readonly UrlToIssue[]) {
     super(
       `Invalid Route Parameters for Route ${JSON.stringify(route.name)} in Route Set ${JSON.stringify(route.routeSetName)}: ${issues
-        .map(({ message, path }) => `${path.map(String).join(".")}: ${message}`)
+        .map(({ message, path }) =>
+          path.length > 0
+            ? `${path.map(String).join(".")}: ${message}`
+            : message,
+        )
         .join("; ")}`,
     );
     this.route = route;
