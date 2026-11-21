@@ -428,4 +428,42 @@ describe("README: Adopting @envylabs/url-to in an existing app", () => {
       "https://support.example.com/articles/123",
     );
   });
+
+  describe("Next.js", () => {
+    const web = defineNextRouteSet("app", {
+      Item: route("/items/{id}"),
+      ItemSearch: route("/items{?q,page}", {
+        params: z.object({
+          page: z.coerce.number().int().positive().optional(),
+          q: z.string().optional(),
+        }),
+      }),
+      Robots: route("/robots.txt", { next: false }),
+      User: route("/users/{userId}"),
+    });
+    const nextPathTo = createNextPathTo(web);
+
+    it("builds the same paths from a Next Route Set", () => {
+      expect(nextPathTo(web.Item, { id: "42" })).toBe("/items/42");
+      expect(nextPathTo(web.ItemSearch, { page: 2, q: "lamp" })).toBe(
+        "/items?q=lamp&page=2",
+      );
+      expect(nextPathTo(web.Robots)).toBe("/robots.txt");
+    });
+
+    it("passes the basePath to the Next url-to, not the Origin", () => {
+      expect(() =>
+        createNextUrlTo(web, "https://www.example.com/shop"),
+      ).toThrow("Invalid Origin: must not include a path");
+
+      const nextUrlTo = createNextUrlTo(web, "https://www.example.com", {
+        basePath: "/shop",
+      });
+
+      expect(nextUrlTo(web.User, { userId: "7" })).toBe(
+        "https://www.example.com/shop/users/7",
+      );
+      expect(nextPathTo(web.User, { userId: "7" })).toBe("/users/7");
+    });
+  });
 });

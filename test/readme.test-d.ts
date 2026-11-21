@@ -193,4 +193,22 @@ describe("README: Adopting @envylabs/url-to in an existing app", () => {
 
     expectTypeOf(pathTo(items.Item, { id: "42" })).toEqualTypeOf<string>();
   });
+
+  describe("Next.js", () => {
+    it("types checked Routes as Next's Route and next: false Routes as string", () => {
+      const app = defineNextRouteSet("app", {
+        Item: route("/items/{id}"),
+        ItemSearch: route("/items{?q,page}"),
+        Robots: route("/robots.txt", { next: false }),
+        User: route("/users/{userId}"),
+      });
+      const pathTo = createNextPathTo(app);
+
+      expectTypeOf(pathTo(app.Item, { id: "42" })).toEqualTypeOf<NextRoute>();
+      expectTypeOf(
+        pathTo(app.ItemSearch, { page: 2, q: "lamp" }),
+      ).toEqualTypeOf<NextRoute>();
+      expectTypeOf(pathTo(app.Robots)).toEqualTypeOf<string>();
+    });
+  });
 });

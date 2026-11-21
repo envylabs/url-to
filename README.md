@@ -534,7 +534,7 @@ These return `"/items/42"`, `"/items?q=lamp&page=2"`, and `"https://www.example.
   pathTo(items.Item, { id: "42" }); // compiles, because both Route Sets are named "app"
   ```
 
-- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/shop`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)):
+- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/shop`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)). In Next.js, pass the `basePath` to `createNextUrlTo` instead (see [the Next.js steps below](#nextjs-1)):
 
   ```ts
   createUrlTo(app, "https://www.example.com/shop"); // TypeError: Invalid Origin: must not include a path
@@ -582,6 +582,61 @@ supportUrlTo(support.Article, { articleId: "123" }); // was: `https://support.ex
 ```
 
 This returns `"https://support.example.com/articles/123"`. For a legacy third-party URL with a fixed query string, see [Templates](#templates), which shows how to model one exactly.
+
+### Next.js
+
+In a Next.js app, the steps above apply with a few differences. First, [register your app's `ParamMap`](#1-register-your-apps-parammap) and [generate the route types before type-checking](#2-generate-the-route-types-before-type-checking), as the Next.js section describes.
+
+Then declare your app's Route Set with `defineNextRouteSet`, and create its path-to and url-to with `createNextPathTo` and `createNextUrlTo`. Each template is checked against your app's Next route patterns as you convert its Route:
+
+```ts
+import { route } from "@envylabs/url-to";
+import {
+  createNextPathTo,
+  createNextUrlTo,
+  defineNextRouteSet,
+} from "@envylabs/url-to/next";
+import { z } from "zod";
+
+// was: export const app = defineRouteSet("app", {
+export const app = defineNextRouteSet("app", {
+  Item: route("/items/{id}"), // app/items/[id]/page.tsx
+  ItemSearch: route("/items{?q,page}", {
+    params: z.object({
+      q: z.string().optional(),
+      page: z.coerce.number().int().positive().optional(),
+    }),
+  }), // app/items/page.tsx
+  Robots: route("/robots.txt", { next: false }), // not a Next route pattern
+  User: route("/users/{userId}"), // app/users/[userId]/page.tsx
+});
+
+export const pathTo = createNextPathTo(app); // was: createPathTo(app)
+export const urlTo = createNextUrlTo(app, "https://www.example.com"); // was: createUrlTo(app, "https://www.example.com")
+```
+
+- **Only the Routes it contains are checked.** A Next Route Set doesn't have to cover every page in your app, so you can convert a few Routes without declaring the rest first.
+- **Paths that aren't Next route patterns** keep `next: false`, such as `/robots.txt`, paths handled by middleware, or Pages Router API routes. See **Opting out** under [Define a Next Route Set](#3-define-a-next-route-set).
+- **With `typedRoutes` on**, the path-to returns Next's `Route` for a checked Route, so its results and the plain-string links that remain go to `Link`, `router.push`, `redirect`, and `Form` side by side. A `next: false` Route's path is a plain `string`:
+
+  ```ts
+  pathTo(app.Item, { id: "42" }); // "/items/42", typed as Next's Route
+  pathTo(app.ItemSearch, { q: "lamp", page: 2 }); // "/items?q=lamp&page=2", typed as Next's Route
+  pathTo(app.Robots); // "/robots.txt", typed as string
+  ```
+
+- **A path prefix is the `basePath`.** If your app is served under a `basePath`, keep it out of the templates and the Origin, and pass it to `createNextUrlTo`. The path-to leaves it out, because Next adds it to links itself:
+
+  ```ts
+  createNextUrlTo(app, "https://www.example.com/shop"); // TypeError: Invalid Origin: must not include a path
+
+  const shopUrlTo = createNextUrlTo(app, "https://www.example.com", {
+    basePath: "/shop",
+  });
+
+  shopUrlTo(app.User, { userId: "7" }); // "https://www.example.com/shop/users/7"
+  pathTo(app.User, { userId: "7" }); // "/users/7"
+  ```
 
 ## API summary
 
