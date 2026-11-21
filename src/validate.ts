@@ -11,13 +11,15 @@ import { parseTemplate } from "./template/engine.js";
  */
 export type RouteParametersResult =
   | {
-      readonly issues: readonly UrlToIssue[];
-      readonly success: false;
-    }
-  | {
+      // The schema's output, or `values` for a template-only Route.
+      readonly output: unknown;
       readonly success: true;
       /** The values that fill the template, keyed by variable name. */
       readonly values: Readonly<Record<string, string | undefined>>;
+    }
+  | {
+      readonly issues: readonly UrlToIssue[];
+      readonly success: false;
     };
 
 /**
@@ -41,7 +43,8 @@ export function validateRouteParameters(
     return { issues: result.issues.map(toUrlToIssue), success: false };
   }
 
-  return checkTemplateValues(route, result.value, false);
+  const checked = checkTemplateValues(route, result.value, false);
+  return checked.success ? { ...checked, output: result.value } : checked;
 }
 
 /**
@@ -102,7 +105,7 @@ function checkTemplateValues(
 
   return issues.length > 0
     ? { issues, success: false }
-    : { success: true, values };
+    : { output: values, success: true, values };
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
