@@ -394,12 +394,14 @@ The Next route pattern is derived from the template:
 | Template                         | Next route pattern  |
 | -------------------------------- | ------------------- |
 | `/items/{id}`                    | `/items/[id]`       |
+| `/items{/id}`                    | `/items/[id]`       |
 | `/docs{/slug*}`                  | `/docs/[...slug]`   |
 | `/shop{/slug*}`, `slug` optional | `/shop/[[...slug]]` |
 | `/items/{id}{?tab}#reviews`      | `/items/[id]`       |
 
 - `{x}` maps to `[x]`, and the variable name must equal Next's segment name.
 - An exploded path-segment expression `{/x*}` maps to a catch-all `[...x]`, or to an optional catch-all `[[...x]]` when `x` is optional (in its schema).
+- A path-segment expression `{/x}` that isn't exploded maps to `/[x]` when `x` is required. Next has no optional single segment, so an optional `{/x}` is a compile error in a Next Route Set: declare the Route with `next: false`, or use `{/x*}` for an optional catch-all.
 - Literal text is kept. Everything from the first query or fragment (literal, or a `{?…}`, `{&…}`, or `{#…}` expression) is ignored, so search params don't affect matching.
 
 A template that matches no pattern, or matches one with different segment names, is a compile error on that Route:

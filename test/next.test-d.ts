@@ -201,9 +201,37 @@ describe("defineNextRouteSet types", () => {
     });
   });
 
-  it("rejects a path segment expression that isn't exploded", () => {
+  it("maps a required path segment expression that isn't exploded to a dynamic segment", () => {
+    expectTypeOf(
+      defineNextRouteSet("pathSegment", {
+        Item: route("/items{/id}"),
+        ItemSchema: route("/items{/id}", {
+          params: z.object({ id: z.string().min(1) }),
+        }),
+      }),
+    ).toExtend<NextRouteSet<"pathSegment">>();
+  });
+
+  it("rejects an optional path segment expression that isn't exploded", () => {
+    defineNextRouteSet("pathSegment", {
+      // @ts-expect-error: an optional {/id} has no Next route pattern
+      Item: route("/items{/id}", {
+        params: z.object({ id: z.string().optional() }),
+      }),
+    });
+    expectTypeOf(
+      defineNextRouteSet("pathSegment", {
+        Item: route("/items{/id}", {
+          next: false,
+          params: z.object({ id: z.string().optional() }),
+        }),
+      }),
+    ).toExtend<NextRouteSet<"pathSegment">>();
+  });
+
+  it("rejects a non-exploded path segment that isn't a catch-all in Next", () => {
     defineNextRouteSet("catchAll", {
-      // @ts-expect-error: only {/x*} maps to a catch-all
+      // @ts-expect-error: {/slug} maps to /docs/[slug], but Next's is /docs/[...slug]
       Docs: route("/docs{/slug}"),
     });
   });

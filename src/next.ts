@@ -96,15 +96,21 @@ type CheckNextDefinitions<Definitions extends Record<string, RouteDefinition>> =
   };
 
 /** `unknown` for a known Next route pattern, or the problem otherwise. */
-type CheckNextPattern<Pattern extends string> = Pattern extends KnownNextPattern
-  ? unknown
-  : [SameShapePatterns<Pattern>] extends [never]
-    ? {
-        readonly "Not a known Next route pattern": Pattern;
-      }
-    : {
-        readonly "Segment names differ from the Next route pattern": SameShapePatterns<Pattern>;
-      };
+type CheckNextPattern<Pattern extends string> = [
+  OptionalPathSegments<Pattern>,
+] extends [never]
+  ? Pattern extends KnownNextPattern
+    ? unknown
+    : [SameShapePatterns<Pattern>] extends [never]
+      ? {
+          readonly "Not a known Next route pattern": Pattern;
+        }
+      : {
+          readonly "Segment names differ from the Next route pattern": SameShapePatterns<Pattern>;
+        }
+  : {
+      readonly "An optional {/x} has no Next route pattern: declare the Route with next: false, or use {/x*}": OptionalPathSegments<Pattern>;
+    };
 
 /** A literal part of a template, cut at the first query or fragment. */
 type CutLiteral<Literal extends string> =
@@ -128,10 +134,17 @@ type ExpressionPattern<
     : IsOptional<Output, Name> extends true
       ? `/[[...${Name}]]`
       : `/[...${Name}]`
-  : Body extends
-        `${OperatorCharacter}${string}` | `${string}${"," | ":" | "*"}${string}`
-    ? `{${Body}}`
-    : `[${Body}]`;
+  : Body extends `/${infer Name}`
+    ? Name extends `${string}${"," | ":"}${string}`
+      ? `{${Body}}`
+      : IsOptional<Output, Name> extends true
+        ? `{${Body}}`
+        : `/[${Name}]`
+    : Body extends
+          | `${OperatorCharacter}${string}`
+          | `${string}${"," | ":" | "*"}${string}`
+      ? `{${Body}}`
+      : `[${Body}]`;
 
 type IsOptional<Output, Name extends string> = Name extends keyof Output
   ? undefined extends Output[Name]
@@ -171,6 +184,16 @@ type ParamMapProblem = Register extends { readonly paramMap: unknown }
   : {
       readonly "Register the app's ParamMap with the Register interface of @envylabs/url-to/next": never;
     };
+
+/**
+ * The names of optional non-exploded path segment expressions (`{/x}`) left
+ * in a derived pattern. Next has no optional single dynamic segment.
+ */
+type OptionalPathSegments<Pattern extends string> =
+  Pattern extends `${string}{/${infer Body}}${infer After}`
+    ? | (Body extends `${string}${"," | ":" | "*"}${string}` ? never : Body)
+      | OptionalPathSegments<After>
+    : never;
 
 type RegisteredParamMap = Register extends { paramMap: infer ParamMap }
   ? ParamMap
@@ -308,8 +331,10 @@ const rootSlash = /^\/(?=$|[?#])/u;
  * `next: false` is not checked.
  *
  * The derived pattern keeps the template's literal path text, maps `{x}` to
- * `[x]`, maps `{/x*}` to `/[...x]` (or `/[[...x]]` when `x` is optional), and
- * ends at the first query, continuation or fragment, literal or expression.
+ * `[x]`, maps a required `{/x}` to `/[x]`, maps `{/x*}` to `/[...x]` (or
+ * `/[[...x]]` when `x` is optional), and ends at the first query,
+ * continuation or fragment, literal or expression. An optional `{/x}` has no
+ * Next equivalent and is rejected.
  */
 export function defineNextRouteSet<
   const RouteSetName extends string,

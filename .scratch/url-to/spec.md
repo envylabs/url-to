@@ -143,7 +143,7 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 - Template-only Routes: path-type variables (simple, reserved, path-segment, label, path-style) must be non-empty strings at runtime. Query, continuation, and fragment variables follow plain RFC 6570.
 - Empty strings in query expressions produce `name=`, per RFC 6570.
 - Undefined optional values are left out per RFC 6570.
-- Template → Next route pattern mapping: `{x}` → `[x]`; exploded path-segment `{/x*}` → `[...x]` when required, `[[...x]]` when optional; query, continuation, and fragment expressions are dropped; literal text is kept. Variable names must equal Next's segment names in `ParamMap`.
+- Template → Next route pattern mapping: `{x}` → `[x]`; non-exploded path-segment `{/x}` → `/[x]` when required, and a compile error when optional (Next has no optional single segment; use `next: false` or `{/x*}`); exploded path-segment `{/x*}` → `[...x]` when required, `[[...x]]` when optional; query, continuation, and fragment expressions are dropped; literal text is kept. Variable names must equal Next's segment names in `ParamMap`.
 - The Next module works whether or not `typedRoutes` is enabled. Without it, Next's `Route` type is effectively `string`.
 
 ### Packaging and tooling
