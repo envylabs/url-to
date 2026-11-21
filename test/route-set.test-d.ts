@@ -11,11 +11,11 @@ describe("route types", () => {
 
   it("rejects a template that doesn't start with /", () => {
     // @ts-expect-error: templates must start with "/"
-    route("pets");
+    route("items");
     // @ts-expect-error: templates must start with "/"
     route("");
     // @ts-expect-error: templates must start with "/"
-    route("https://example.com/pets");
+    route("https://example.com/items");
   });
 });
 

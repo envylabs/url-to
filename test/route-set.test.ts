@@ -33,8 +33,8 @@ describe("defineRouteSet", () => {
 
 describe("route", () => {
   it("rejects a template that doesn't start with /", () => {
-    expect(() => route("pets" as "/pets")).toThrow(
-      'Route templates must start with "/": received "pets"',
+    expect(() => route("items" as "/items")).toThrow(
+      'Route templates must start with "/": received "items"',
     );
   });
 
