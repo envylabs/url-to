@@ -1,5 +1,5 @@
-// Keeps every `@example` on the public functions an exact excerpt of a README
-// `ts` code block, which the README tests already check.
+// Checks that each public function has an `@example`, and that each one is a
+// fenced `ts` block whose code is an exact excerpt of a README `ts` code block.
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
@@ -20,9 +20,9 @@ const DOCUMENTED_FUNCTIONS = [
   "createNextUrlTo",
 ];
 
-// An `@example` tag's code lines, without the doc comment's ` * ` prefixes,
-// the tag name, or the fence lines.
-function exampleCode(tag: ts.JSDocTag): string[] {
+// The code lines inside an `@example` tag's `ts` fence, without the doc
+// comment's ` * ` prefixes, or `undefined` when the tag has no such fence.
+function exampleCode(tag: ts.JSDocTag): string[] | undefined {
   const raw = tag.getSourceFile().text.slice(tag.tagName.end, tag.end);
   const lines = raw
     .split("\n")
@@ -30,14 +30,14 @@ function exampleCode(tag: ts.JSDocTag): string[] {
   const opening = lines.findIndex((line) => line === "```ts");
   const closing = lines.indexOf("```", opening + 1);
   if (opening === -1 || closing === -1) {
-    return lines;
+    return undefined;
   }
   return lines.slice(opening + 1, closing);
 }
 
 // The code of each `@example` tag on each function exported from the entry
 // modules, keyed by the function's name.
-function exportedFunctionExamples(): Map<string, string[][]> {
+function exportedFunctionExamples(): Map<string, (string[] | undefined)[]> {
   const program = ts.createProgram(ENTRY_MODULES.map(repoPath), {
     module: ts.ModuleKind.NodeNext,
     moduleResolution: ts.ModuleResolutionKind.NodeNext,
@@ -45,7 +45,7 @@ function exportedFunctionExamples(): Map<string, string[][]> {
     target: ts.ScriptTarget.ESNext,
   });
   const checker = program.getTypeChecker();
-  const examples = new Map<string, string[][]>();
+  const examples = new Map<string, (string[] | undefined)[]>();
 
   for (const entry of ENTRY_MODULES) {
     const sourceFile = program.getSourceFile(repoPath(entry));
@@ -120,6 +120,17 @@ describe("doc comment examples", () => {
     readFileSync(repoPath("README.md"), "utf8"),
   );
 
+  it("cover every function exported from the entry modules", () => {
+    const unlisted = [...examples.keys()]
+      .filter((name) => !DOCUMENTED_FUNCTIONS.includes(name))
+      .map((name) => `${name} is exported but not in DOCUMENTED_FUNCTIONS`);
+    const missing = DOCUMENTED_FUNCTIONS.filter(
+      (name) => !examples.has(name),
+    ).map((name) => `${name} is in DOCUMENTED_FUNCTIONS but not exported`);
+    const problems = [...unlisted, ...missing];
+    expect(problems, problems.join("\n")).toEqual([]);
+  });
+
   it.each(DOCUMENTED_FUNCTIONS)("%s has an @example", (name) => {
     expect(
       examples.get(name)?.length ?? 0,
@@ -129,12 +140,20 @@ describe("doc comment examples", () => {
 
   it("are exact excerpts of README ts code blocks", () => {
     const mismatches = [...examples].flatMap(([name, codes]) =>
-      codes
-        .filter((code) => code.length === 0 || !isExcerpt(code, readmeBlocks))
-        .map(
-          (code) =>
+      codes.flatMap((code) => {
+        if (code === undefined) {
+          return [`${name}: @example is not a fenced ts code block`];
+        }
+        if (code.every((line) => line.trim() === "")) {
+          return [`${name}: @example has no code`];
+        }
+        if (!isExcerpt(code, readmeBlocks)) {
+          return [
             `${name}: @example is not an excerpt of a README ts block:\n${code.join("\n")}`,
-        ),
+          ];
+        }
+        return [];
+      }),
     );
     expect(mismatches, mismatches.join("\n\n")).toEqual([]);
   });
