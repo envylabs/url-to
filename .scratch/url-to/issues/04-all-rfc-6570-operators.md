@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] The `+ # . / ; ? &` operators expand and escape per RFC 6570, and the type parser supports the same syntax
 - [ ] Literal query strings mixed with continuation expressions (e.g. `/account.php?action=address_book{&x}`) and literal fragments work
@@ -14,3 +14,7 @@
 - [ ] An optional variable in a simple or reserved expression is a compile error
 - [ ] Prefix modifiers (`{var:3}`) are rejected at compile time and at runtime
 - [ ] RFC 6570 examples for these operators pass (string values)
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in c837814; code-review fixes up to 9295748.

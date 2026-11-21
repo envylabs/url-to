@@ -4,7 +4,7 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Package metadata: name `@envylabs/url-to`, version `0.0.0`, ESM-only (`type: module`), `sideEffects: false`, `engines.node` `>=22`, public `publishConfig.access`, repository `github.com/envylabs/url-to`, author `Envy Labs (envylabs.com)`, license MIT, `allowScripts`
 - [ ] A `LICENSE` file (MIT, "Copyright (c) 2026 Envy Labs") included in the published package
@@ -22,3 +22,7 @@
 - [ ] A template that doesn't start with `/` is rejected at compile time and at runtime
 - [ ] Passing a Route from another Route Set to a path-to is a compile error
 - [ ] Tests go through the public root entry point only
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in 0d48002, c4f6e43; code-review fixes up to 9295748.

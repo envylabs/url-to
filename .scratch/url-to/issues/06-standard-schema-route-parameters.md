@@ -4,7 +4,7 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `route(template, { params, meta })`. Both options are optional
 - [ ] The params argument uses the schema's input type, and the template is filled from the schema's output (e.g. coercion and transforms are visible in the URL)
@@ -14,3 +14,7 @@
 - [ ] Throws a clear error naming the Route when validation returns a Promise
 - [ ] `meta` keeps its literal type on the Route
 - [ ] Tested with Zod 4 and at least one other Standard Schema library (dev dependencies only; no runtime dependency)
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in d2e09a5, 14376d9, dfeda48; code-review fixes up to 9295748.

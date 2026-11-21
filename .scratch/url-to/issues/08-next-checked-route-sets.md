@@ -4,7 +4,7 @@
 
 **Blocked by:** 04, 06
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `next` (≥ 15.5) is declared as an optional peer dependency. The core entry point never imports it
 - [ ] A `Register` interface the app augments with its `ParamMap` type
@@ -27,3 +27,5 @@
 - Ran `npx next typegen && npx tsc --noEmit -p .` in each app with `scratchpad/v08-probe/verify.sh`. There were no errors in the probe on any of the three versions. All the `@ts-expect-error` directives were used, so `Link` rejected the plain `string` and typedRoutes was active.
 - Ran `typedRoutes: false` on 16.4.6 with `scratchpad/v08-probe/verify-off.sh`. `link.d.ts` isn't generated. The only probe error is the unused `@ts-expect-error` on the opted-out `string` `Link`, which is expected because `href` accepts any string there. Pattern checking still rejects the bad definitions.
 - Registration guard: when the registration is a `.d.ts` whose `ParamMap` import doesn't resolve (`skipLibCheck`), the import becomes the error type and would accept every template. `defineNextRouteSet` now rejects every checked Route with "The registered ParamMap has no literal Next route patterns…". Verified in v08-app16 with `scratchpad/v08-probe/any-check.sh`. If nothing is registered, every checked Route is rejected with a "Register the app's ParamMap…" error.
+
+- 2026-11-21: Resolved on `feat/url-to` in 4604ae4, 19e4ee4, 889fbc8, db51ccc; code-review fixes up to 9295748.

@@ -4,9 +4,13 @@
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Numbers and booleans are turned into strings and escaped
 - [ ] Arrays and records expand per RFC 6570, both exploded and not exploded, for every operator
 - [ ] Passing an array or record where it isn't allowed is a compile error
 - [ ] RFC 6570 level 4 list and map examples pass (prefix modifiers excluded)
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in e0d82cd, c602dbd; code-review fixes up to 9295748.

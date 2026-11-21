@@ -4,7 +4,7 @@
 
 **Blocked by:** 06
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `parseParams(route, ...sources)` accepts plain records and `URLSearchParams`, merged left to right
 - [ ] Repeated `URLSearchParams` keys become arrays
@@ -12,3 +12,7 @@
 - [ ] Template-only Routes are validated against their inferred Route Parameters (presence, non-empty path-type values)
 - [ ] `parseParamsOrThrow` throws `UrlToError`. Its message has no values
 - [ ] Async schemas produce the same clear error as in building
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in f4a1863; code-review fixes up to 9295748.

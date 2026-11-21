@@ -4,9 +4,13 @@
 
 **Blocked by:** 03, 08
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] `createNextUrlTo(routeSet, origin, { basePath? })` returns a string that includes the basePath
 - [ ] The same strict Origin rules as the core url-to
 - [ ] Works without a basePath
 - [ ] Validation, escaping and errors match the core helpers
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in 614b1cc, fee7ddb; code-review fixes up to 9295748.

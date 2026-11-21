@@ -4,7 +4,7 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** resolved
 
 - [ ] Simple `{x}` expressions are expanded and escaped per RFC 6570, including values containing `/`, `?`, `&`, `#`, spaces and non-ASCII characters
 - [ ] Route Parameters are inferred from the template as required strings. The params argument is required when the Route has variables and absent when it has none
@@ -12,3 +12,7 @@
 - [ ] For a template-only Route, an empty string in a path-type position throws at runtime
 - [ ] `UrlToError` is exported. Its message names the Route, the Route Set and the failing keys, and never contains Route Parameter values. It exposes the Route
 - [ ] Tests go through the public root entry point only
+
+## Comments
+
+- 2026-11-21: Resolved on `feat/url-to` in 8a3f8b2; code-review fixes up to 9295748.
