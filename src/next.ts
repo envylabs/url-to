@@ -2,10 +2,10 @@
  * Next.js integration, published as `@envylabs/url-to/next`. This is the only
  * module that refers to `next`, and only to its types.
  */
-import type { Route as NextRoute } from "next";
+import type { Route as NextRouteHref } from "next";
 
-import { buildPath } from "./build.js";
-import { parseOrigin } from "./origin.js";
+import { buildPath, type RouteBuilder } from "./build.js";
+import { queryOrFragmentProblem } from "./origin.js";
 import type { RouteParametersInput, RouteParametersOutput } from "./params.js";
 import {
   defineRouteSet,
@@ -14,6 +14,7 @@ import {
   type RouteSet,
 } from "./route-set.js";
 import type { RouteDefinition } from "./route.js";
+import { createUrlBuilder } from "./url-to.js";
 
 /**
  * Builds origin-less paths for the Routes of one Next Route Set. A checked
@@ -27,7 +28,7 @@ export type NextPathTo<RouteSetName extends string> = <
 >(
   route: R,
   ...params: RouteParametersInput<R>
-) => R extends { readonly next: false } ? string : NextRoute;
+) => R extends { readonly next: false } ? string : NextRouteHref;
 
 /**
  * A Route Set whose Routes were checked against the app's Next route patterns
@@ -47,12 +48,7 @@ export type NextRouteSet<
  * Builds fully-qualified URLs for the Routes of one Next Route Set, against
  * one Origin. Unlike the Next path-to, the URL includes the app's `basePath`.
  */
-export type NextUrlTo<RouteSetName extends string> = <
-  R extends Route<RouteDefinition, string, RouteSetName>,
->(
-  route: R,
-  ...params: RouteParametersInput<R>
-) => string;
+export type NextUrlTo<RouteSetName extends string> = RouteBuilder<RouteSetName>;
 
 /**
  * Options for {@link createNextUrlTo}.
@@ -168,6 +164,16 @@ type OperatorCharacter =
   "," | ";" | "!" | "?" | "." | "@" | "/" | "&" | "#" | "+" | "=" | "|";
 
 /**
+ * The names of optional non-exploded path segment expressions (`{/x}`) left
+ * in a derived pattern. Next has no optional single dynamic segment.
+ */
+type OptionalPathSegments<Pattern extends string> =
+  Pattern extends `${string}{/${infer Body}}${infer After}`
+    ? | (Body extends `${string}${"," | ":" | "*"}${string}` ? never : Body)
+      | OptionalPathSegments<After>
+    : never;
+
+/**
  * A problem with the registration itself, or `never`. A ParamMap whose keys
  * aren't literal patterns would accept every template, so it is rejected. That
  * covers `any`, including the error type an unresolved import in a `.d.ts`
@@ -184,16 +190,6 @@ type ParamMapProblem = Register extends { readonly paramMap: unknown }
   : {
       readonly "Register the app's ParamMap with the Register interface of @envylabs/url-to/next": never;
     };
-
-/**
- * The names of optional non-exploded path segment expressions (`{/x}`) left
- * in a derived pattern. Next has no optional single dynamic segment.
- */
-type OptionalPathSegments<Pattern extends string> =
-  Pattern extends `${string}{/${infer Body}}${infer After}`
-    ? | (Body extends `${string}${"," | ":" | "*"}${string}` ? never : Body)
-      | OptionalPathSegments<After>
-    : never;
 
 type RegisteredParamMap = Register extends { paramMap: infer ParamMap }
   ? ParamMap
@@ -254,16 +250,13 @@ export function createNextUrlTo<RouteSetName extends string>(
   origin: string,
   options: NextUrlToOptions = {},
 ): NextUrlTo<RouteSetName> {
-  const base = parseOrigin(origin);
   const basePath = parseBasePath(options.basePath ?? "");
-  const prefix = `${base}${basePath}`;
-
-  return (route, ...[params]) => {
-    const path = buildPath(route, params);
-
+  const buildUrl = createUrlBuilder(origin, (path) =>
     // Like Next, the root path under a basePath is the basePath itself.
-    return prefix + (basePath !== "" ? path.replace(rootSlash, "") : path);
-  };
+    basePath === "" ? path : basePath + path.replace(rootSlash, ""),
+  );
+
+  return (route, ...[params]) => buildUrl(route, params);
 }
 
 function invalidBasePath(reason: string): TypeError {
@@ -293,11 +286,9 @@ function parseBasePath(basePath: string): string {
   if (basePath.endsWith("/")) {
     throw invalidBasePath("must not end with /");
   }
-  if (basePath.includes("?")) {
-    throw invalidBasePath("must not include a query");
-  }
-  if (basePath.includes("#")) {
-    throw invalidBasePath("must not include a fragment");
+  const problem = queryOrFragmentProblem(basePath);
+  if (problem !== undefined) {
+    throw invalidBasePath(problem);
   }
   if (!pathCharacters.test(basePath)) {
     throw invalidBasePath("must only contain characters valid in a URL path");

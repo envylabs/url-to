@@ -1,17 +1,10 @@
-import { buildPath } from "./build.js";
-import type { RouteParametersInput } from "./params.js";
-import type { Route, RouteSet } from "./route-set.js";
-import type { RouteDefinition } from "./route.js";
+import { buildPath, type RouteBuilder } from "./build.js";
+import type { RouteSet } from "./route-set.js";
 
 /**
  * Builds origin-less paths for the Routes of one Route Set.
  */
-export type PathTo<RouteSetName extends string> = <
-  R extends Route<RouteDefinition, string, RouteSetName>,
->(
-  route: R,
-  ...params: RouteParametersInput<R>
-) => string;
+export type PathTo<RouteSetName extends string> = RouteBuilder<RouteSetName>;
 
 /**
  * Creates a path-to for a Route Set.

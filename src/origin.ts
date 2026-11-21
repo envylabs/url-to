@@ -24,16 +24,29 @@ export function parseOrigin(origin: string): string {
     throw invalidOrigin("must not include a path");
   }
 
-  // An empty `?` or `#` leaves `search` or `hash` empty but stays in `href`.
-  const [beforeFragment = ""] = url.href.split("#", 1);
-  if (url.search !== "" || beforeFragment.endsWith("?")) {
-    throw invalidOrigin("must not include a query");
-  }
-  if (url.hash !== "" || url.href.endsWith("#")) {
-    throw invalidOrigin("must not include a fragment");
+  // Checked on `href`, since an empty `?` or `#` leaves `search` or `hash`
+  // empty.
+  const problem = queryOrFragmentProblem(url.href);
+  if (problem !== undefined) {
+    throw invalidOrigin(problem);
   }
 
   return url.origin;
+}
+
+/**
+ * Why a URL or path must be rejected for including a query or fragment, even
+ * an empty one, or `undefined` when it includes neither.
+ */
+export function queryOrFragmentProblem(text: string): string | undefined {
+  const [beforeFragment = ""] = text.split("#", 1);
+  if (beforeFragment.includes("?")) {
+    return "must not include a query";
+  }
+  if (text.includes("#")) {
+    return "must not include a fragment";
+  }
+  return undefined;
 }
 
 const notAbsolute = "must be an absolute URL with a scheme and host";
