@@ -73,7 +73,7 @@ A **Route** is a named, known place your code links to: a page, an API endpoint,
 route("/orders/{orderId}");
 ```
 
-A **Route Set** is a named collection of Routes that are served together, such as your app, a storefront, or an admin console. Declare it with `defineRouteSet(name, routes)`:
+A **Route Set** is a named collection of Routes that are served together, such as your app, an admin console, or a third-party service. Declare it with `defineRouteSet(name, routes)`:
 
 ```ts
 import { defineRouteSet, route } from "@envylabs/url-to";
@@ -92,7 +92,7 @@ Each key becomes the Route's name, and every Route is branded with its Route Set
 
 Because a Route is a value, typing `app.` lists every Route, renaming a key with your editor updates every call site, and Find All References shows everywhere that links to it. To move a page, change only its template.
 
-Helpers built for one Route Set reject Routes from another, so you can never build an admin path against your storefront's Origin:
+Helpers built for one Route Set reject Routes from another, so you can never build an admin path against your app's Origin:
 
 ```ts
 const admin = defineRouteSet("admin", { Home: route("/") });
@@ -166,25 +166,25 @@ Passing Route Parameters to a Route that has none, leaving out a required one, o
 An **Origin** is the scheme, host, and optional port a Route Set is served from. A Route Set carries no Origin, so one Route Set can be served from several:
 
 ```ts
-const store = defineRouteSet("store", {
-  Product: route("/products/{sku}"),
+const api = defineRouteSet("api", {
+  Order: route("/orders/{orderId}"),
 });
 
-const publicUrlTo = createUrlTo(store, "https://store.example.com");
-const internalUrlTo = createUrlTo(store, "http://store.internal:8080");
+const publicUrlTo = createUrlTo(api, "https://api.example.com");
+const internalUrlTo = createUrlTo(api, "http://api.internal:8080");
 
-publicUrlTo(store.Product, { sku: "A-1" }); // "https://store.example.com/products/A-1"
-internalUrlTo(store.Product, { sku: "A-1" }); // "http://store.internal:8080/products/A-1"
+publicUrlTo(api.Order, { orderId: "A-1" }); // "https://api.example.com/orders/A-1"
+internalUrlTo(api.Order, { orderId: "A-1" }); // "http://api.internal:8080/orders/A-1"
 ```
 
 The Origin is validated when the url-to is created, and an invalid one throws a `TypeError`. It must be an absolute URL with a scheme and host, and may have a port and a bare trailing `/`. Anything else is rejected, so a misconfigured Origin can't silently drop a path prefix:
 
 ```ts
-createUrlTo(store, "https://example.com/shop"); // TypeError: Invalid Origin: must not include a path
-createUrlTo(store, "https://example.com?ref=1"); // TypeError: Invalid Origin: must not include a query
-createUrlTo(store, "https://example.com#top"); // TypeError: Invalid Origin: must not include a fragment
-createUrlTo(store, "https://user:pw@example.com"); // TypeError: Invalid Origin: must not include credentials
-createUrlTo(store, "example.com"); // TypeError: Invalid Origin: must be an absolute URL with a scheme and host
+createUrlTo(api, "https://example.com/app"); // TypeError: Invalid Origin: must not include a path
+createUrlTo(api, "https://example.com?ref=1"); // TypeError: Invalid Origin: must not include a query
+createUrlTo(api, "https://example.com#top"); // TypeError: Invalid Origin: must not include a fragment
+createUrlTo(api, "https://user:pw@example.com"); // TypeError: Invalid Origin: must not include credentials
+createUrlTo(api, "example.com"); // TypeError: Invalid Origin: must be an absolute URL with a scheme and host
 ```
 
 The Origin is a static string. Read it from configuration once, at startup, and create one url-to per Origin.
@@ -396,7 +396,7 @@ The Next route pattern is derived from the template:
 | `/items/{id}`                    | `/items/[id]`       |
 | `/items{/id}`                    | `/items/[id]`       |
 | `/docs{/slug*}`                  | `/docs/[...slug]`   |
-| `/shop{/slug*}`, `slug` optional | `/shop/[[...slug]]` |
+| `/help{/slug*}`, `slug` optional | `/help/[[...slug]]` |
 | `/items/{id}{?tab}#reviews`      | `/items/[id]`       |
 
 - `{x}` maps to `[x]`, and the variable name must equal Next's segment name.
@@ -448,11 +448,11 @@ Fully-qualified URLs, for emails, redirects to other hosts, and server-to-server
 import { createNextUrlTo } from "@envylabs/url-to/next";
 
 const urlTo = createNextUrlTo(web, "https://www.example.com", {
-  basePath: "/shop",
+  basePath: "/app",
 });
 
-urlTo(web.Item, { id: "42" }); // "https://www.example.com/shop/items/42"
-urlTo(web.Home); // "https://www.example.com/shop"
+urlTo(web.Item, { id: "42" }); // "https://www.example.com/app/items/42"
+urlTo(web.Home); // "https://www.example.com/app"
 ```
 
 The Origin follows the [same rules](#building-urls-url-to-and-origins) as `createUrlTo`. The `basePath` must match your `next.config`: empty or left out for none, otherwise starting with `/`, not ending with `/`, with no query or fragment, with only characters valid unescaped in a URL path (percent-encode anything else), and with no empty, `.`, or `..` segments. As in Next, the root Route under a `basePath` is the `basePath` itself, with no trailing slash. The url-to returns a plain `string`.

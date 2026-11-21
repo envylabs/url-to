@@ -4,7 +4,7 @@ Status: resolved
 
 ## Problem Statement
 
-Developers building TypeScript applications, especially Next.js apps, construct paths and URLs to their own pages and to the external systems they link to (storefronts, admin consoles, third-party dashboards). Those URLs usually get hand-written as string concatenations or template literals across the codebase. The result:
+Developers building TypeScript applications, especially Next.js apps, construct paths and URLs to their own pages and to the external systems they link to (admin consoles, partner APIs, third-party dashboards). Those URLs usually get hand-written as string concatenations or template literals across the codebase. The result:
 
 - Dynamic segments and query values often aren't URI-escaped, so a value with `/`, `?`, `&`, or a space produces a broken or wrong link.
 - Nothing checks that required values were given, that optional ones are really optional, or that values are well-formed (non-empty, the right shape) before they go into a URL.
@@ -31,7 +31,7 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 ### Defining Routes and Route Sets
 
 1. As an application developer, I want to declare each known destination once as a named Route, so that there is a single choke point for every path my app links to.
-2. As an application developer, I want to group Routes into a named Route Set, so that destinations served together (my app, a storefront, an admin console) are organized and discoverable.
+2. As an application developer, I want to group Routes into a named Route Set, so that destinations served together (my app, an admin console, a third-party service) are organized and discoverable.
 3. As an application developer, I want to define a Route with only a URI template, so that simple destinations take no ceremony.
 4. As an application developer, I want a Route with only a template to infer its Route Parameters from the template, so that `/items/{id}` alone requires an `id` string with no schema.
 5. As an application developer, I want to attach a Standard Schema to a Route's Route Parameters, so that I can enforce rules beyond "a string is present" (non-empty, enums, formats, coercion).
@@ -68,7 +68,7 @@ A separate entry point, `@envylabs/url-to/next`, binds a Route Set to the app's 
 33. As an application developer, I want template-only Routes to reject empty strings for path-type variables at runtime, so that inferred parameters still give known-good URLs without a schema.
 34. As an application developer, I want url-to to return a plain string, so that the result drops into `href`, `fetch`, `redirect`, and string interpolation with no conversion.
 35. As an application developer, I want an Origin with a path, query, or fragment rejected when the url-to is created, so that a misconfigured base URL can't silently drop a path prefix.
-36. As an application developer, I want passing a Route from a different Route Set to a helper to be a compile error, so that I can never build a storefront path against my app's Origin.
+36. As an application developer, I want passing a Route from a different Route Set to a helper to be a compile error, so that I can never build an admin console path against my app's Origin.
 
 ### Errors
 

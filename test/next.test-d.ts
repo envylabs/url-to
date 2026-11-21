@@ -39,8 +39,8 @@ describe("createNextPathTo types", () => {
     expectTypeOf(
       pathTo(web.Docs, { slug: ["a", "b"] }),
     ).toEqualTypeOf<NextRoute>();
-    expectTypeOf(pathTo(web.Shop)).toEqualTypeOf<NextRoute>();
-    expectTypeOf(pathTo(web.Shop, { slug: ["a"] })).toEqualTypeOf<NextRoute>();
+    expectTypeOf(pathTo(web.Help)).toEqualTypeOf<NextRoute>();
+    expectTypeOf(pathTo(web.Help, { slug: ["a"] })).toEqualTypeOf<NextRoute>();
     // @ts-expect-error: slug is required for a catch-all
     pathTo(web.Docs);
     // @ts-expect-error: id is required
@@ -96,7 +96,7 @@ describe("createNextUrlTo types", () => {
   it("takes Route Parameters like the core url-to", () => {
     const urlTo = createNextUrlTo(web, "https://example.com");
 
-    expectTypeOf(urlTo(web.Shop)).toEqualTypeOf<string>();
+    expectTypeOf(urlTo(web.Help)).toEqualTypeOf<string>();
     // @ts-expect-error: id is required
     urlTo(web.Item);
     // @ts-expect-error: id is missing
@@ -174,7 +174,7 @@ describe("defineNextRouteSet types", () => {
   it("maps an optional exploded path segment to an optional catch-all", () => {
     expectTypeOf(
       defineNextRouteSet("optionalCatchAll", {
-        Shop: route("/shop{/slug*}", {
+        Help: route("/help{/slug*}", {
           params: z.object({ slug: z.array(z.string()).optional() }),
         }),
       }),
@@ -184,7 +184,7 @@ describe("defineNextRouteSet types", () => {
   it("rejects a catch-all whose optionality differs from Next's", () => {
     defineNextRouteSet("catchAll", {
       // @ts-expect-error: a template-only {/slug*} is required, but Next's is [[...slug]]
-      Shop: route("/shop{/slug*}"),
+      Help: route("/help{/slug*}"),
     });
     defineNextRouteSet("catchAll", {
       // @ts-expect-error: an optional slug maps to [[...slug]], but Next's is [...slug]

@@ -7,8 +7,8 @@ export const app = defineRouteSet("app", {
   ItemReview: route("/items/{itemId}/reviews/{reviewId}"),
 });
 
-export const store = defineRouteSet("store", {
-  Cart: route("/cart"),
+export const admin = defineRouteSet("admin", {
+  Dashboard: route("/dashboard"),
   Home: route("/"),
 });
 

@@ -2,7 +2,7 @@ import { describe, expectTypeOf, it } from "vitest";
 
 import { createUrlTo, route, type UrlTo } from "../src/index.js";
 
-import { app, store } from "./fixtures/route-sets.js";
+import { admin, app } from "./fixtures/route-sets.js";
 
 describe("createUrlTo types", () => {
   it("returns a UrlTo for the Route Set", () => {
@@ -39,10 +39,10 @@ describe("createUrlTo types", () => {
   it("rejects a Route from another Route Set", () => {
     const urlTo = createUrlTo(app, "https://example.com");
 
-    // @ts-expect-error: store.Cart belongs to the "store" Route Set
-    urlTo(store.Cart);
+    // @ts-expect-error: admin.Dashboard belongs to the "admin" Route Set
+    urlTo(admin.Dashboard);
     // @ts-expect-error: same key and template, but a different Route Set
-    urlTo(store.Home);
+    urlTo(admin.Home);
     // @ts-expect-error: an unnamed RouteDefinition isn't a Route
     urlTo(route("/"));
   });

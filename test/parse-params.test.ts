@@ -9,7 +9,7 @@ import {
   UrlToError,
 } from "../src/index.js";
 
-const shop = defineRouteSet("shop", {
+const site = defineRouteSet("site", {
   Search: route("/search/{term}{?page}", {
     params: z.object({
       page: z.string().regex(/^\d+$/).optional(),
@@ -20,7 +20,7 @@ const shop = defineRouteSet("shop", {
 
 describe("parseParams", () => {
   it("returns the schema's output for a valid record", () => {
-    expect(parseParams(shop.Search, { term: "  lamps " })).toEqual({
+    expect(parseParams(site.Search, { term: "  lamps " })).toEqual({
       data: { term: "lamps" },
       success: true,
     });
@@ -29,13 +29,13 @@ describe("parseParams", () => {
   it("merges records and URLSearchParams left to right", () => {
     expect(
       parseParams(
-        shop.Search,
+        site.Search,
         { page: "1", term: "lamps" },
         new URLSearchParams("page=3"),
       ),
     ).toEqual({ data: { page: "3", term: "lamps" }, success: true });
     expect(
-      parseParams(shop.Search, new URLSearchParams("page=3"), {
+      parseParams(site.Search, new URLSearchParams("page=3"), {
         page: "1",
         term: "lamps",
       }),
@@ -76,7 +76,7 @@ describe("parseParams", () => {
   it("returns the schema's issues for invalid input", () => {
     expect(
       parseParams(
-        shop.Search,
+        site.Search,
         { term: "lamps" },
         new URLSearchParams("page=x"),
       ),
@@ -177,7 +177,7 @@ describe("parseParamsOrThrow", () => {
   it("returns the validated Route Parameters", () => {
     expect(
       parseParamsOrThrow(
-        shop.Search,
+        site.Search,
         { term: " lamps " },
         new URLSearchParams("page=2"),
       ),
@@ -187,14 +187,14 @@ describe("parseParamsOrThrow", () => {
   it("throws a UrlToError whose message has no values", () => {
     const parse = () =>
       parseParamsOrThrow(
-        shop.Search,
+        site.Search,
         { term: "secret-term" },
         new URLSearchParams("page=secret-page"),
       );
 
     expect(parse).toThrow(UrlToError);
     expect(parse).toThrow(
-      /^Invalid Route Parameters for Route "Search" in Route Set "shop": page: /,
+      /^Invalid Route Parameters for Route "Search" in Route Set "site": page: /,
     );
     expect(parse).not.toThrow(/secret/);
   });

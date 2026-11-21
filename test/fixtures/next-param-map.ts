@@ -8,8 +8,8 @@ interface ParamMap {
   "/about": {};
   "/api/health": {};
   "/docs/[...slug]": { slug: string[] };
+  "/help/[[...slug]]": { slug?: string[] };
   "/items/[id]": { id: string };
-  "/shop/[[...slug]]": { slug?: string[] };
   "/users/[userId]/posts/[postId]": { postId: string; userId: string };
 }
 

@@ -121,44 +121,44 @@ describe("README: Templates", () => {
 });
 
 describe("README: url-to and Origins", () => {
-  const store = defineRouteSet("store", {
-    Product: route("/products/{sku}"),
+  const api = defineRouteSet("api", {
+    Order: route("/orders/{orderId}"),
   });
 
   it("builds URLs against several Origins", () => {
-    const publicUrlTo = createUrlTo(store, "https://store.example.com");
-    const internalUrlTo = createUrlTo(store, "http://store.internal:8080");
+    const publicUrlTo = createUrlTo(api, "https://api.example.com");
+    const internalUrlTo = createUrlTo(api, "http://api.internal:8080");
 
-    expect(publicUrlTo(store.Product, { sku: "A-1" })).toBe(
-      "https://store.example.com/products/A-1",
+    expect(publicUrlTo(api.Order, { orderId: "A-1" })).toBe(
+      "https://api.example.com/orders/A-1",
     );
-    expect(internalUrlTo(store.Product, { sku: "A-1" })).toBe(
-      "http://store.internal:8080/products/A-1",
+    expect(internalUrlTo(api.Order, { orderId: "A-1" })).toBe(
+      "http://api.internal:8080/orders/A-1",
     );
   });
 
   it("accepts a bare trailing slash", () => {
-    const urlTo = createUrlTo(store, "https://store.example.com/");
+    const urlTo = createUrlTo(api, "https://api.example.com/");
 
-    expect(urlTo(store.Product, { sku: "A-1" })).toBe(
-      "https://store.example.com/products/A-1",
+    expect(urlTo(api.Order, { orderId: "A-1" })).toBe(
+      "https://api.example.com/orders/A-1",
     );
   });
 
   it("rejects an Origin with anything but a scheme, host and port", () => {
-    expect(() => createUrlTo(store, "https://example.com/shop")).toThrow(
+    expect(() => createUrlTo(api, "https://example.com/app")).toThrow(
       "Invalid Origin: must not include a path",
     );
-    expect(() => createUrlTo(store, "https://example.com?ref=1")).toThrow(
+    expect(() => createUrlTo(api, "https://example.com?ref=1")).toThrow(
       "Invalid Origin: must not include a query",
     );
-    expect(() => createUrlTo(store, "https://example.com#top")).toThrow(
+    expect(() => createUrlTo(api, "https://example.com#top")).toThrow(
       "Invalid Origin: must not include a fragment",
     );
-    expect(() => createUrlTo(store, "https://user:pw@example.com")).toThrow(
+    expect(() => createUrlTo(api, "https://user:pw@example.com")).toThrow(
       "Invalid Origin: must not include credentials",
     );
-    expect(() => createUrlTo(store, "example.com")).toThrow(
+    expect(() => createUrlTo(api, "example.com")).toThrow(
       "Invalid Origin: must be an absolute URL with a scheme and host",
     );
   });
@@ -313,15 +313,15 @@ describe("README: Reverse parsing", () => {
   });
 
   it("builds an optional path segment from a schema", () => {
-    const shop = defineRouteSet("shop", {
+    const site = defineRouteSet("site", {
       Items: route("/items{/id}", {
         params: z.object({ id: z.string().min(1).optional() }),
       }),
     });
-    const pathTo = createPathTo(shop);
+    const pathTo = createPathTo(site);
 
-    expect(pathTo(shop.Items)).toBe("/items");
-    expect(pathTo(shop.Items, { id: "7" })).toBe("/items/7");
+    expect(pathTo(site.Items)).toBe("/items");
+    expect(pathTo(site.Items, { id: "7" })).toBe("/items/7");
   });
 
   it("throws a UrlToError from the throwing variant", () => {
@@ -352,12 +352,12 @@ describe("README: Next.js", () => {
 
   it("builds URLs with the basePath", () => {
     const urlTo = createNextUrlTo(web, "https://www.example.com", {
-      basePath: "/shop",
+      basePath: "/app",
     });
 
     expect(urlTo(web.Item, { id: "42" })).toBe(
-      "https://www.example.com/shop/items/42",
+      "https://www.example.com/app/items/42",
     );
-    expect(urlTo(web.Home)).toBe("https://www.example.com/shop");
+    expect(urlTo(web.Home)).toBe("https://www.example.com/app");
   });
 });

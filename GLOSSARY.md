@@ -21,7 +21,7 @@ A named collection of Routes that are served together. It carries no Origin, so 
 _Avoid_: Pages, Route table, Site
 
 **Origin**:
-The scheme, host, and port a Route Set is served from, e.g. `https://store.example.com`.
+The scheme, host, and port a Route Set is served from, e.g. `https://www.example.com`.
 _Avoid_: Base URL, Domain, Host, Site URL
 
 **Next route pattern**:

@@ -167,7 +167,7 @@ describe("README: Next.js", () => {
 
   it("returns a string from the Next url-to", () => {
     const urlTo = createNextUrlTo(web, "https://www.example.com", {
-      basePath: "/shop",
+      basePath: "/app",
     });
 
     expectTypeOf(urlTo(web.Item, { id: "42" })).toEqualTypeOf<string>();

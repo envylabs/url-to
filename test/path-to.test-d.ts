@@ -9,7 +9,7 @@ import {
   type UrlToIssue,
 } from "../src/index.js";
 
-import { app, shapes, store } from "./fixtures/route-sets.js";
+import { admin, app, shapes } from "./fixtures/route-sets.js";
 
 describe("createPathTo types", () => {
   it("returns a string for a Route with no variables", () => {
@@ -28,10 +28,10 @@ describe("createPathTo types", () => {
   it("rejects a Route from another Route Set", () => {
     const pathTo = createPathTo(app);
 
-    // @ts-expect-error: store.Cart belongs to the "store" Route Set
-    pathTo(store.Cart);
+    // @ts-expect-error: admin.Dashboard belongs to the "admin" Route Set
+    pathTo(admin.Dashboard);
     // @ts-expect-error: same key and template, but a different Route Set
-    pathTo(store.Home);
+    pathTo(admin.Home);
   });
 
   it("rejects a Route that hasn't been placed in a Route Set", () => {

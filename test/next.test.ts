@@ -46,9 +46,11 @@ describe("createNextPathTo", () => {
   });
 
   it("builds optional catch-all paths", () => {
-    expect(pathTo(web.Shop)).toBe("/shop");
-    expect(pathTo(web.Shop, {})).toBe("/shop");
-    expect(pathTo(web.Shop, { slug: ["sale", "new"] })).toBe("/shop/sale/new");
+    expect(pathTo(web.Help)).toBe("/help");
+    expect(pathTo(web.Help, {})).toBe("/help");
+    expect(pathTo(web.Help, { slug: ["billing", "refunds"] })).toBe(
+      "/help/billing/refunds",
+    );
   });
 
   it("keeps query and fragment parts", () => {
@@ -134,8 +136,8 @@ describe("createNextUrlTo", () => {
     expect(urlTo(web.ItemSearch, { id: "1", q: "a&b" })).toBe(
       "http://localhost:3000/docs-site/items/1?q=a%26b#reviews",
     );
-    expect(urlTo(web.Shop, { slug: ["sale", "new"] })).toBe(
-      "http://localhost:3000/docs-site/shop/sale/new",
+    expect(urlTo(web.Help, { slug: ["billing", "refunds"] })).toBe(
+      "http://localhost:3000/docs-site/help/billing/refunds",
     );
     expect(urlTo(web.Robots)).toBe(
       "http://localhost:3000/docs-site/robots.txt",
