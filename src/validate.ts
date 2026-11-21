@@ -45,15 +45,15 @@ export function validateRouteParameters(
 }
 
 /**
- * Checks values against the template's variables: path-type variables must
- * be present, values must be strings, and every key must be a variable in the
+ * Checks values against the template's variables: required variables must be
+ * present, values must be strings, and every key must be a variable in the
  * template. Template-only Routes also reject empty path-type values; with a
  * schema, emptiness is the schema's call.
  */
 function checkTemplateValues(
   route: Route,
   input: unknown,
-  rejectEmpty: boolean,
+  templateOnly: boolean,
 ): RouteParametersResult {
   if (input !== undefined && !isRecord(input)) {
     return {
@@ -65,22 +65,26 @@ function checkTemplateValues(
   const parsed = parseTemplate(route.template);
   const values: Record<string, string> = {};
   const issues: UrlToIssue[] = [];
-  const names = new Set<string>();
+  // Whether each variable is required: template-only Routes require every
+  // path-type variable, schema Routes only those whose absence would leave
+  // an empty path segment. A variable used several times is required if any
+  // occurrence requires it.
+  const required = new Map<string, boolean>();
 
   for (const { name, operator } of parsed.variables) {
-    if (names.has(name)) {
-      continue;
-    }
-    names.add(name);
+    const requires = templateOnly ? operator.pathType : operator.requiresValue;
+    required.set(name, (required.get(name) ?? false) || requires);
+  }
 
+  for (const [name, isRequired] of required) {
     const value = input?.[name];
     if (value === undefined) {
-      if (operator.pathType) {
+      if (isRequired) {
         issues.push({ message: "is required", path: [name] });
       }
     } else if (typeof value !== "string") {
       issues.push({ message: "must be a string", path: [name] });
-    } else if (value === "" && operator.pathType && rejectEmpty) {
+    } else if (value === "" && isRequired && templateOnly) {
       issues.push({ message: "must not be empty", path: [name] });
     } else {
       values[name] = value;
@@ -88,7 +92,7 @@ function checkTemplateValues(
   }
 
   for (const key of Object.keys(input ?? {})) {
-    if (!names.has(key)) {
+    if (!required.has(key)) {
       issues.push({
         message: "is not a variable in the template",
         path: [key],

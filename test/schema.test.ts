@@ -164,6 +164,7 @@ describe("Routes with a Standard Schema", () => {
   it("throws when the schema's output leaves out a required variable", () => {
     const partial = defineRouteSet("partial", {
       Item: route("/items/{id}", {
+        // @ts-expect-error: an optional id in a simple expression is also caught at compile time
         params: z.object({ id: z.string().optional() }),
       }),
     });
@@ -203,4 +204,106 @@ describe("Route meta", () => {
 
     expect(pathTo(catalog.User, { userId: "u1" })).toBe("/users/u1");
   });
+});
+
+describe("schema Routes in path-type expressions", () => {
+  const docs = defineRouteSet("docs", {
+    Label: route("/report{.format}", {
+      params: z.object({ format: z.string().optional() }),
+    }),
+    Matrix: route("/items{;id,mode}", {
+      params: z.object({ id: z.string(), mode: z.string().optional() }),
+    }),
+    Segments: route("/docs{/section,page}", {
+      params: z.object({ page: z.string().optional(), section: z.string() }),
+    }),
+    Shared: route("/search{?q}/{q}", {
+      // @ts-expect-error: q is also in a simple expression, so it can't be optional
+      params: z.object({ q: z.string().optional() }),
+    }),
+  });
+  const pathTo = createPathTo(docs);
+
+  it("leaves out undefined optional values with no stray separators", () => {
+    expect(pathTo(docs.Label, {})).toBe("/report");
+    expect(pathTo(docs.Matrix, { id: "7" })).toBe("/items;id=7");
+    expect(pathTo(docs.Segments, { section: "intro" })).toBe("/docs/intro");
+  });
+
+  it("lets the schema allow empty strings", () => {
+    expect(pathTo(docs.Label, { format: "" })).toBe("/report.");
+    expect(pathTo(docs.Matrix, { id: "7", mode: "" })).toBe("/items;id=7;mode");
+    expect(pathTo(docs.Segments, { page: "", section: "intro" })).toBe(
+      "/docs/intro/",
+    );
+  });
+
+  it("requires a variable used in any simple expression", () => {
+    const error = thrownBy(() => pathTo(docs.Shared, {}));
+
+    expect(error.issues).toEqual([{ message: "is required", path: ["q"] }]);
+  });
+});
+
+describe("RFC 6570 examples (schema Routes with empty and undefined values)", () => {
+  // Section 3.2 variables. A schema decides what is valid, so empty strings
+  // and undefined values reach the engine.
+  const values: Record<string, string> = {
+    empty: "",
+    path: "/foo/bar",
+    v: "6",
+    var: "value",
+    who: "fred",
+    x: "1024",
+    y: "768",
+  };
+  const passThrough = z.record(z.string(), z.string());
+
+  function expand(template: string): string {
+    const examples = defineRouteSet("examples", {
+      Example: route(`/${template}` as "/", { params: passThrough as never }),
+    });
+    const pathTo = createPathTo(examples) as (
+      route: unknown,
+      params: Record<string, string>,
+    ) => string;
+
+    return pathTo(
+      examples.Example,
+      Object.fromEntries(
+        Object.entries(values).filter(([name]) =>
+          new RegExp(`[{,.;/?&#+]${name}[,}]`).test(template),
+        ),
+      ),
+    );
+  }
+
+  it.each([
+    ["O{empty}X", "OX"],
+    ["?{x,empty}", "?1024,"],
+    ["O{+empty}X", "OX"],
+    ["up{+path}{var}/here", "up/foo/barvalue/here"],
+    ["X{.empty}", "X."],
+    ["X{.undef}", "X"],
+    ["{/var,empty}", "/value/"],
+    ["{/var,undef}", "/value"],
+    ["{;empty}", ";empty"],
+    ["{;v,empty,who}", ";v=6;empty;who=fred"],
+    ["{;v,bar,who}", ";v=6;who=fred"],
+    ["{;x,y,empty}", ";x=1024;y=768;empty"],
+    ["{;x,y,undef}", ";x=1024;y=768"],
+  ])("expands %j as %j", (template, expected) => {
+    expect(expand(template)).toBe(`/${expected}`);
+  });
+
+  it.each(["O{undef}X", "?{x,undef}", "?{undef,y}", "O{+undef}X"])(
+    "rejects an undefined value in a simple or reserved expression: %j",
+    (template) => {
+      const error = thrownBy(() => expand(template));
+
+      expect(error.issues).toEqual([
+        { message: "is required", path: ["undef"] },
+      ]);
+    },
+  );
 });

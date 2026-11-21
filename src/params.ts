@@ -5,36 +5,29 @@ import type {
   StandardSchemaV1InferOutput,
 } from "./standard-schema.js";
 import type {
+  RequiredValueOperator,
   TemplateParameters,
+  TemplateVariableNames,
   TemplateVariables,
 } from "./template/types.js";
 
 /**
- * `unknown` when a Route Parameters schema's output keys match the template's
- * variables, or an object describing the mismatch otherwise. Intersect the
- * schema's parameter with it to reject the mismatch at compile time.
+ * `unknown` when a Route Parameters schema's output fits the template, or an
+ * object describing each problem otherwise. Intersect the schema's parameter
+ * with it to reject a mismatch at compile time. The output keys must equal the
+ * template's variables, and a variable in a simple or reserved expression
+ * can't be optional, since leaving it out would leave an empty path segment.
  */
 export type CheckParamsSchema<
   Template extends string,
   Params extends StandardSchemaV1 | undefined,
 > = Params extends StandardSchemaV1
-  ? [
-      Exclude<TemplateVariables<Template>["name"], OutputKeys<Params>>,
-      Exclude<OutputKeys<Params>, TemplateVariables<Template>["name"]>,
-    ] extends [never, never]
-    ? unknown
-    : {
-        readonly "Route Parameters schema doesn't match the template": {
-          readonly "missing from the schema": Exclude<
-            TemplateVariables<Template>["name"],
-            OutputKeys<Params>
-          >;
-          readonly "not in the template": Exclude<
-            OutputKeys<Params>,
-            TemplateVariables<Template>["name"]
-          >;
-        };
-      }
+  ? SchemaProblems<
+      TemplateVariables<Template>["name"],
+      OutputKeys<Params>,
+      OptionalKeys<StandardSchemaV1InferOutput<Params>> &
+        TemplateVariableNames<Template, RequiredValueOperator>
+    >
   : unknown;
 
 /**
@@ -67,5 +60,23 @@ export type RouteParametersOutput<R extends RouteDefinition> =
     ? StandardSchemaV1InferOutput<R["params"]>
     : TemplateParameters<R["template"]>;
 
+type OptionalKeys<Output> = {
+  [Key in keyof Output]-?: undefined extends Output[Key] ? Key : never;
+}[keyof Output];
+
 type OutputKeys<Params extends StandardSchemaV1> =
   keyof StandardSchemaV1InferOutput<Params> & string;
+
+type SchemaProblems<Variables extends string, Keys extends string, Optional> = [
+  Exclude<Variables, Keys>,
+  Exclude<Keys, Variables>,
+  Optional,
+] extends [never, never, never]
+  ? unknown
+  : {
+      readonly "Route Parameters schema doesn't match the template": {
+        readonly "missing from the schema": Exclude<Variables, Keys>;
+        readonly "not in the template": Exclude<Keys, Variables>;
+        readonly "optional in a simple or reserved expression": Optional;
+      };
+    };

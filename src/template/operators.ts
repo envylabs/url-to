@@ -18,6 +18,12 @@ export interface OperatorSpec {
   readonly named: boolean;
   /** Whether the variable must be a non-empty value for template-only Routes. */
   readonly pathType: boolean;
+  /**
+   * Whether leaving the value out would leave an empty path segment, so even
+   * a schema can't make it optional. Mirrors `RequiredValueOperator` in
+   * `./types.ts`.
+   */
+  readonly requiresValue: boolean;
   /** Joins the expansions of the expression's variables. */
   readonly separator: string;
 }
@@ -29,6 +35,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: false,
     pathType: true,
+    requiresValue: true,
     separator: ",",
   },
   ";": {
@@ -37,6 +44,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: true,
     pathType: true,
+    requiresValue: false,
     separator: ";",
   },
   "?": {
@@ -45,6 +53,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "=",
     named: true,
     pathType: false,
+    requiresValue: false,
     separator: "&",
   },
   ".": {
@@ -53,6 +62,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: false,
     pathType: true,
+    requiresValue: false,
     separator: ".",
   },
   "/": {
@@ -61,6 +71,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: false,
     pathType: true,
+    requiresValue: false,
     separator: "/",
   },
   "&": {
@@ -69,6 +80,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "=",
     named: true,
     pathType: false,
+    requiresValue: false,
     separator: "&",
   },
   "#": {
@@ -77,6 +89,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: false,
     pathType: false,
+    requiresValue: false,
     separator: ",",
   },
   "+": {
@@ -85,6 +98,7 @@ export const operators: Readonly<Record<string, OperatorSpec | undefined>> = {
     ifEmpty: "",
     named: false,
     pathType: true,
+    requiresValue: true,
     separator: ",",
   },
 };

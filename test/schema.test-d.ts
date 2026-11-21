@@ -2,7 +2,12 @@ import * as v from "valibot";
 import { describe, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 
-import { createPathTo, route, type RouteParameters } from "../src/index.js";
+import {
+  createPathTo,
+  defineRouteSet,
+  route,
+  type RouteParameters,
+} from "../src/index.js";
 
 import { catalog } from "./fixtures/schema-route-sets.js";
 
@@ -49,6 +54,51 @@ describe("Standard Schema Route Parameters types", () => {
       // @ts-expect-error: token isn't a variable in the template
       params: v.object({ id: v.string(), token: v.string() }),
     });
+  });
+
+  it("rejects an optional key in a simple or reserved expression", () => {
+    route("/items/{id}", {
+      // @ts-expect-error: a missing id would leave an empty path segment
+      params: z.object({ id: z.string().optional() }),
+    });
+    route("/files{+path}", {
+      // @ts-expect-error: a missing path would leave an empty path segment
+      params: v.object({ path: v.optional(v.string()) }),
+    });
+    route("/search/{q}{?q}", {
+      // @ts-expect-error: q is also in a simple expression
+      params: z.object({ q: z.string().optional() }),
+    });
+  });
+
+  it("accepts an optional key in other expressions", () => {
+    route("/docs{/section,page}{.format}{;mode}", {
+      params: z.object({
+        format: z.string().optional(),
+        mode: z.string().optional(),
+        page: z.string().optional(),
+        section: z.string(),
+      }),
+    });
+    route("/search{?q}{&page}{#section}", {
+      params: v.object({
+        page: v.optional(v.string()),
+        q: v.optional(v.string()),
+        section: v.optional(v.string()),
+      }),
+    });
+  });
+
+  it("makes the params argument optional when every key is optional", () => {
+    const docs = defineRouteSet("docs", {
+      Results: route("/search{?q}", {
+        params: z.object({ q: z.string().optional() }),
+      }),
+    });
+    const pathTo = createPathTo(docs);
+
+    expectTypeOf(pathTo(docs.Results)).toEqualTypeOf<string>();
+    expectTypeOf(pathTo(docs.Results, { q: "a" })).toEqualTypeOf<string>();
   });
 
   it("accepts a schema whose keys match the template", () => {
