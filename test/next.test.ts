@@ -154,8 +154,35 @@ describe("createNextUrlTo", () => {
   });
 
   it.each([
+    ["docs-site", "must start with /"],
+    ["/", "must not be /; leave it out or pass an empty string"],
+    ["/docs-site/", "must not end with /"],
+    ["/docs-site?a=1", "must not include a query"],
+    ["/docs-site#top", "must not include a fragment"],
+    ["https://example.com/docs-site", "must start with /"],
+  ])(
+    "rejects the basePath %j when the url-to is created",
+    (basePath, reason) => {
+      expect(() =>
+        createNextUrlTo(web, "https://example.com", { basePath }),
+      ).toThrow(new TypeError(`Invalid basePath: ${reason}`));
+    },
+  );
+
+  it("keeps a nested basePath as written", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/apps/docs-site",
+    });
+
+    expect(urlTo(web.About)).toBe("https://example.com/apps/docs-site/about");
+  });
+
+  it.each([
     ["items", "must be an absolute URL with a scheme and host"],
-    ["mailto:team@example.com", "must be an absolute URL with a scheme and host"],
+    [
+      "mailto:team@example.com",
+      "must be an absolute URL with a scheme and host",
+    ],
     ["https://user:secret@example.com", "must not include credentials"],
     ["https://example.com/docs-site", "must not include a path"],
     ["https://example.com?a=1", "must not include a query"],

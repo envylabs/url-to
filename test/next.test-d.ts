@@ -5,8 +5,10 @@ import { z } from "zod";
 import { defineRouteSet, route } from "../src/index.js";
 import {
   createNextPathTo,
+  createNextUrlTo,
   defineNextRouteSet,
   type NextRouteSet,
+  type NextUrlTo,
 } from "../src/next.js";
 
 import { web } from "./fixtures/next-route-sets.js";
@@ -62,6 +64,60 @@ describe("createNextPathTo types", () => {
 
     // @ts-expect-error: plain wasn't checked against the Next route patterns
     createNextPathTo(plain);
+  });
+});
+
+describe("createNextUrlTo types", () => {
+  it("returns a NextUrlTo for the Route Set", () => {
+    expectTypeOf(createNextUrlTo(web, "https://example.com")).toEqualTypeOf<
+      NextUrlTo<"web">
+    >();
+  });
+
+  it("returns a string, for checked and opted-out Routes alike", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/docs-site",
+    });
+
+    expectTypeOf(urlTo(web.Home)).toEqualTypeOf<string>();
+    expectTypeOf(urlTo(web.Item, { id: "1" })).toEqualTypeOf<string>();
+    expectTypeOf(urlTo(web.Robots)).toEqualTypeOf<string>();
+  });
+
+  it("requires an Origin and takes an optional basePath", () => {
+    // @ts-expect-error: the Origin is required
+    createNextUrlTo(web);
+    // @ts-expect-error: the basePath is a string
+    createNextUrlTo(web, "https://example.com", { basePath: 1 });
+    // @ts-expect-error: basePath is the only option
+    createNextUrlTo(web, "https://example.com", { trailingSlash: true });
+  });
+
+  it("takes Route Parameters like the core url-to", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com");
+
+    expectTypeOf(urlTo(web.Shop)).toEqualTypeOf<string>();
+    // @ts-expect-error: id is required
+    urlTo(web.Item);
+    // @ts-expect-error: id is missing
+    urlTo(web.Item, {});
+    // @ts-expect-error: the Route has no Route Parameters
+    urlTo(web.Home, {});
+  });
+
+  it("rejects a Route from another Route Set", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com");
+    const other = defineNextRouteSet("other", { Home: route("/") });
+
+    // @ts-expect-error: other.Home belongs to the "other" Route Set
+    urlTo(other.Home);
+  });
+
+  it("rejects a Route Set that wasn't defined with defineNextRouteSet", () => {
+    const plain = defineRouteSet("plain", { Home: route("/") });
+
+    // @ts-expect-error: plain wasn't checked against the Next route patterns
+    createNextUrlTo(plain, "https://example.com");
   });
 });
 

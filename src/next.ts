@@ -30,6 +30,20 @@ export type NextPathTo<RouteSetName extends string> = <
 ) => R extends { readonly next: false } ? string : NextRoute;
 
 /**
+ * A Route Set whose Routes were checked against the app's Next route patterns
+ * by {@link defineNextRouteSet}.
+ */
+export type NextRouteSet<
+  RouteSetName extends string = string,
+  Definitions extends Record<string, RouteDefinition> = Record<
+    string,
+    RouteDefinition
+  >,
+> = {
+  readonly [nextRouteSetBrand]: true;
+} & RouteSet<RouteSetName, Definitions>;
+
+/**
  * Builds fully-qualified URLs for the Routes of one Next Route Set, against
  * one Origin. Unlike the Next path-to, the URL includes the app's `basePath`.
  */
@@ -47,20 +61,6 @@ export interface NextUrlToOptions {
   /** The app's `basePath` from `next.config`, such as `/docs`. */
   readonly basePath?: string;
 }
-
-/**
- * A Route Set whose Routes were checked against the app's Next route patterns
- * by {@link defineNextRouteSet}.
- */
-export type NextRouteSet<
-  RouteSetName extends string = string,
-  Definitions extends Record<string, RouteDefinition> = Record<
-    string,
-    RouteDefinition
-  >,
-> = {
-  readonly [nextRouteSetBrand]: true;
-} & RouteSet<RouteSetName, Definitions>;
 
 /**
  * The app augments this interface with its generated `ParamMap`, once:
@@ -218,22 +218,64 @@ export function createNextPathTo<RouteSetName extends string>(
 
 /**
  * Creates a Next url-to for a Next Route Set, an Origin and the app's
- * `basePath`.
+ * `basePath`. Under a basePath, the root Route's URL is the basePath with no
+ * trailing slash, as Next links it by default.
+ *
+ * @throws TypeError when the Origin is invalid (as for `createUrlTo`), or the
+ * basePath isn't empty or a path prefix that starts with `/`, doesn't end
+ * with `/`, and has no query or fragment.
  */
 export function createNextUrlTo<RouteSetName extends string>(
   _routeSet: NextRouteSet<RouteSetName>,
   origin: string,
   options: NextUrlToOptions = {},
 ): NextUrlTo<RouteSetName> {
-  const basePath = options.basePath ?? "";
-  const base = parseOrigin(origin) + basePath;
+  const base = parseOrigin(origin);
+  const basePath = parseBasePath(options.basePath ?? "");
+  const prefix = `${base}${basePath}`;
 
   return (route, ...[params]) => {
     const path = buildPath(route, params);
 
     // Like Next, the root path under a basePath is the basePath itself.
-    return base + (basePath !== "" ? path.replace(rootSlash, "") : path);
+    return prefix + (basePath !== "" ? path.replace(rootSlash, "") : path);
   };
+}
+
+function invalidBasePath(reason: string): TypeError {
+  return new TypeError(`Invalid basePath: ${reason}`);
+}
+
+/**
+ * Validates a basePath by Next's rules: empty for none, or a path prefix that
+ * starts with `/` and doesn't end with one. It is a path, so a query or
+ * fragment is rejected too.
+ *
+ * @throws TypeError when the basePath breaks one of those rules.
+ */
+function parseBasePath(basePath: string): string {
+  if (basePath === "") {
+    return basePath;
+  }
+  if (!basePath.startsWith("/")) {
+    throw invalidBasePath("must start with /");
+  }
+  if (basePath === "/") {
+    throw invalidBasePath(
+      "must not be /; leave it out or pass an empty string",
+    );
+  }
+  if (basePath.endsWith("/")) {
+    throw invalidBasePath("must not end with /");
+  }
+  if (basePath.includes("?")) {
+    throw invalidBasePath("must not include a query");
+  }
+  if (basePath.includes("#")) {
+    throw invalidBasePath("must not include a fragment");
+  }
+
+  return basePath;
 }
 
 /** The slash of the root path, before any query or fragment. */
