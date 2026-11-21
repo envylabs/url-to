@@ -112,6 +112,15 @@ describe("parseParams", () => {
       });
     });
 
+    it("rejects an empty list member in a path-type expression", () => {
+      const files = defineRouteSet("files", { File: route("/x{/p*}") });
+
+      expect(parseParams(files.File, { p: ["a", ""] })).toEqual({
+        issues: [{ message: "must not be empty", path: ["p", 1] }],
+        success: false,
+      });
+    });
+
     it("turns repeated URLSearchParams keys into a list for an exploded variable", () => {
       const listings = defineRouteSet("listings", {
         Search: route("/search{?tags*}"),

@@ -106,10 +106,12 @@ function checkTemplateValues(
     }
 
     const valueIssues = checkValue(value, [name]);
-    if (valueIssues.length > 0) {
-      issues.push(...valueIssues);
-    } else if (isRequired && templateOnly && isEmpty(value as TemplateValue)) {
-      issues.push({ message: "must not be empty", path: [name] });
+    const issuesFound =
+      valueIssues.length > 0 || !(isRequired && templateOnly)
+        ? valueIssues
+        : emptyIssues(value as TemplateValue, [name]);
+    if (issuesFound.length > 0) {
+      issues.push(...issuesFound);
     } else {
       values[name] = value as TemplateValue;
     }
@@ -149,10 +151,29 @@ function checkValue(
   );
 }
 
-function isEmpty(value: TemplateValue): boolean {
-  return typeof value === "object"
-    ? Object.keys(value).length === 0
-    : value === "";
+/**
+ * Issues for an empty value, or a list or record with no members or an empty
+ * member, each of which would leave an empty path segment or label.
+ */
+function emptyIssues(
+  value: TemplateValue,
+  path: readonly PropertyKey[],
+): UrlToIssue[] {
+  const empty = { message: "must not be empty", path };
+  if (typeof value !== "object") {
+    return value === "" ? [empty] : [];
+  }
+
+  const members = Object.entries(value);
+  if (members.length === 0) {
+    return [empty];
+  }
+  return members
+    .filter(([, member]) => member === "")
+    .map(([key]) => ({
+      message: "must not be empty",
+      path: [...path, Array.isArray(value) ? Number(key) : key],
+    }));
 }
 
 function isPlainObject(

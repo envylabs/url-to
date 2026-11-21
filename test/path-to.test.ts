@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { createPathTo, route, UrlToError } from "../src/index.js";
+import {
+  createPathTo,
+  defineRouteSet,
+  route,
+  UrlToError,
+} from "../src/index.js";
 
 import { app, shapes } from "./fixtures/route-sets.js";
 
@@ -78,6 +83,41 @@ describe("createPathTo", () => {
     expect(error.message).toBe(
       'Invalid Route Parameters for Route "Item" in Route Set "app": id: must not be empty',
     );
+  });
+
+  it.each([
+    ["/x{/p*}"],
+    ["/x/{p*}"],
+    ["/x/{+p*}"],
+    ["/x{.p*}"],
+    ["/x{;p*}"],
+  ] as const)("rejects an empty list member in %s", (template) => {
+    const lists = defineRouteSet("lists", { List: route(template) });
+    const pathTo = createPathTo(lists);
+    const error = thrownBy(() => pathTo(lists.List, { p: ["a", ""] }));
+
+    expect(error.issues).toEqual([
+      { message: "must not be empty", path: ["p", 1] },
+    ]);
+  });
+
+  it("rejects an empty record member in a path-type expression", () => {
+    const records = defineRouteSet("records", { Record: route("/x{/r*}") });
+    const pathTo = createPathTo(records);
+    const error = thrownBy(() =>
+      pathTo(records.Record, { r: { a: "1", b: "" } }),
+    );
+
+    expect(error.issues).toEqual([
+      { message: "must not be empty", path: ["r", "b"] },
+    ]);
+  });
+
+  it("allows an empty list member in a query expression", () => {
+    const queries = defineRouteSet("queries", { Query: route("/x{?q*}") });
+    const pathTo = createPathTo(queries);
+
+    expect(pathTo(queries.Query, { q: ["a", ""] })).toBe("/x?q=a&q=");
   });
 
   it("names every failing key", () => {

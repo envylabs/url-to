@@ -143,7 +143,7 @@ Rules:
 - **Undefined optional values are left out cleanly** from query, continuation, path-segment, path-style, label, and fragment expressions, with no stray separators: `pathTo(docs.Search)` is `"/search"`, and `/account.php?action=settings{&tab}` with no `tab` is `"/account.php?action=settings"`.
 - **A value in a simple or reserved expression can never be missing.** Leaving out `id` in `/items/{id}` would build `/items/`, which is almost always a bug, so an optional Route Parameter in a simple (`{id}`) or reserved (`{+path}`) expression is a compile error. This is deliberate. To model an optional path segment, use a path-segment expression with a schema that makes the value optional: `/items{/id}` with `id` optional builds `/items` or `/items/7`.
 - **An empty string in a query value follows RFC 6570**: `pathTo(docs.Search, { q: "" })` is `"/search?q="`.
-- **Template-only Routes reject empty path values at runtime.** Without a schema, variables in simple, reserved, label, path-segment, and path-style expressions are required and must not be empty strings (or empty lists or records). With a schema, emptiness is the schema's call.
+- **Template-only Routes reject empty path values at runtime.** Without a schema, variables in simple, reserved, label, path-segment, and path-style expressions are required and must not be empty strings, empty lists or records, or lists or records with an empty member. With a schema, emptiness is the schema's call.
 
 ## Building paths: path-to
 
@@ -318,7 +318,7 @@ if (!result.success) {
 
 - **Sources** are plain records or `URLSearchParams`, merged left to right. A key repeated in `URLSearchParams` becomes an array.
 - **With a schema**, the merged values are passed to it, and `data` has the schema's output type. Unknown keys are the schema's call.
-- **Template-only Routes** are validated against their inferred Route Parameters: path-type variables must be present and non-empty, and keys that aren't template variables (such as tracking parameters) are ignored. Values are strings, or lists of strings for variables that are exploded everywhere they appear.
+- **Template-only Routes** are validated against their inferred Route Parameters: path-type variables must be present and non-empty (as must every member of a list), and keys that aren't template variables (such as tracking parameters) are ignored. Values are strings, or lists of strings for variables that are exploded everywhere they appear.
 
 `parseParamsOrThrow` returns the data directly and throws a `UrlToError` when the input is invalid, for when invalid input is a programming error:
 
