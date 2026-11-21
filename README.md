@@ -479,7 +479,7 @@ Each distinct place one of these builds is a candidate Route.
 
 ### 2. Declare a Route Set
 
-Declare a Route for each place you're converting, group them in a Route Set, and export it from a single module that call sites import. Create the path-to and url-to in the same module, so every call site imports them from one place too:
+Declare a Route for each place you're converting, group them in a Route Set, and export it from a single module that call sites import:
 
 ```ts
 import {
@@ -529,22 +529,25 @@ These return `"/items/42"`, `"/items?q=lamp&page=2"`, and `"https://www.example.
 - **Grow one Route Set.** Add Routes to your app's Route Set as you convert them, rather than starting a Route Set per feature. If you do split Route Sets, give each a unique name. Names are checked only at compile time, so two Route Sets with the same name are interchangeable to the compiler:
 
   ```ts
-  const items = defineRouteSet("app", { Item: route("/items/{id}") });
+  const users = defineRouteSet("app", {
+    Profile: route("/users/{userId}/profile"),
+  });
 
-  pathTo(items.Item, { id: "42" }); // compiles, because both Route Sets are named "app"
+  pathTo(users.Profile, { userId: "7" }); // compiles and returns "/users/7/profile", though app has no Profile Route
   ```
 
-- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/shop`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)). In Next.js, pass the `basePath` to `createNextUrlTo` instead (see [the Next.js steps below](#nextjs-1)):
+- **An Origin can't include a path.** An existing base-URL setting that includes a path, such as `https://www.example.com/app`, is rejected as an Origin. If your app is served under a path prefix, put the prefix in the templates and use the bare Origin (see [Building URLs: url-to and Origins](#building-urls-url-to-and-origins)). In Next.js, pass the `basePath` to `createNextUrlTo` instead (see [Adopting in a Next.js app](#adopting-in-a-nextjs-app)):
 
   ```ts
-  createUrlTo(app, "https://www.example.com/shop"); // TypeError: Invalid Origin: must not include a path
-
-  const shop = defineRouteSet("shop", {
-    Item: route("/shop/items/{id}"),
+  const app = defineRouteSet("app", {
+    Item: route("/app/items/{id}"),
   });
-  const shopUrlTo = createUrlTo(shop, "https://www.example.com");
 
-  shopUrlTo(shop.Item, { id: "42" }); // "https://www.example.com/shop/items/42"
+  createUrlTo(app, "https://www.example.com/app"); // TypeError: Invalid Origin: must not include a path
+
+  const urlTo = createUrlTo(app, "https://www.example.com");
+
+  urlTo(app.Item, { id: "42" }); // "https://www.example.com/app/items/42"
   ```
 
 ### 4. Replace hand-written parsing
@@ -554,7 +557,7 @@ Where your app reads route params and search params by hand, validate them with 
 ```ts
 const searchParams = new URLSearchParams("q=lamp&page=2");
 
-const result = parseParams(app.ItemSearch, searchParams); // was: const page = Number(searchParams.get("page") ?? 1);
+const result = parseParams(app.ItemSearch, searchParams); // was: const page = searchParams.has("page") ? Number(searchParams.get("page")) : undefined;
 ```
 
 Here `result` is `{ success: true, data: { q: "lamp", page: 2 } }`.
@@ -583,7 +586,7 @@ supportUrlTo(support.Article, { articleId: "123" }); // was: `https://support.ex
 
 This returns `"https://support.example.com/articles/123"`. For a legacy third-party URL with a fixed query string, see [Templates](#templates), which shows how to model one exactly.
 
-### Next.js
+### Adopting in a Next.js app
 
 In a Next.js app, the steps above apply with a few differences. First, [register your app's `ParamMap`](#1-register-your-apps-parammap) and [generate the route types before type-checking](#2-generate-the-route-types-before-type-checking), as the Next.js section describes.
 
@@ -625,16 +628,16 @@ export const urlTo = createNextUrlTo(app, "https://www.example.com"); // was: cr
   pathTo(app.Robots); // "/robots.txt", typed as string
   ```
 
-- **A path prefix is the `basePath`.** If your app is served under a `basePath`, keep it out of the templates and the Origin, and pass it to `createNextUrlTo`. The path-to leaves it out, because Next adds it to links itself:
+- **A path prefix is the `basePath`.** If your app is served under a `basePath`, keep it out of the templates and the Origin, and pass it to `createNextUrlTo`, as Next.js steps [4](#4-build-paths-with-createnextpathto) and [5](#5-build-urls-with-createnexturlto) describe:
 
   ```ts
-  createNextUrlTo(app, "https://www.example.com/shop"); // TypeError: Invalid Origin: must not include a path
+  createNextUrlTo(app, "https://www.example.com/app"); // TypeError: Invalid Origin: must not include a path
 
-  const shopUrlTo = createNextUrlTo(app, "https://www.example.com", {
-    basePath: "/shop",
+  const urlTo = createNextUrlTo(app, "https://www.example.com", {
+    basePath: "/app",
   });
 
-  shopUrlTo(app.User, { userId: "7" }); // "https://www.example.com/shop/users/7"
+  urlTo(app.User, { userId: "7" }); // "https://www.example.com/app/users/7"
   pathTo(app.User, { userId: "7" }); // "/users/7"
   ```
 

@@ -388,23 +388,31 @@ describe("README: Adopting @envylabs/url-to in an existing app", () => {
   });
 
   it("builds a Route from another Route Set with the same name", () => {
-    const items = defineRouteSet("app", { Item: route("/items/{id}") });
+    const users = defineRouteSet("app", {
+      Profile: route("/users/{userId}/profile"),
+    });
 
-    expect(pathTo(items.Item, { id: "42" })).toBe("/items/42");
+    expect(pathTo(users.Profile, { userId: "7" })).toBe("/users/7/profile");
   });
 
   it("rejects an Origin with a path, so the prefix goes in the templates", () => {
-    expect(() => createUrlTo(app, "https://www.example.com/shop")).toThrow(
+    const app = defineRouteSet("app", {
+      Item: route("/app/items/{id}"),
+    });
+    const error = thrownBy(() =>
+      createUrlTo(app, "https://www.example.com/app"),
+    );
+
+    expect(error).toBeInstanceOf(TypeError);
+    expect(error).toHaveProperty(
+      "message",
       "Invalid Origin: must not include a path",
     );
 
-    const shop = defineRouteSet("shop", {
-      Item: route("/shop/items/{id}"),
-    });
-    const shopUrlTo = createUrlTo(shop, "https://www.example.com");
+    const urlTo = createUrlTo(app, "https://www.example.com");
 
-    expect(shopUrlTo(shop.Item, { id: "42" })).toBe(
-      "https://www.example.com/shop/items/42",
+    expect(urlTo(app.Item, { id: "42" })).toBe(
+      "https://www.example.com/app/items/42",
     );
   });
 
@@ -429,8 +437,8 @@ describe("README: Adopting @envylabs/url-to in an existing app", () => {
     );
   });
 
-  describe("Next.js", () => {
-    const web = defineNextRouteSet("app", {
+  describe("Adopting in a Next.js app", () => {
+    const app = defineNextRouteSet("app", {
       Item: route("/items/{id}"),
       ItemSearch: route("/items{?q,page}", {
         params: z.object({
@@ -441,29 +449,35 @@ describe("README: Adopting @envylabs/url-to in an existing app", () => {
       Robots: route("/robots.txt", { next: false }),
       User: route("/users/{userId}"),
     });
-    const nextPathTo = createNextPathTo(web);
+    const pathTo = createNextPathTo(app);
 
     it("builds the same paths from a Next Route Set", () => {
-      expect(nextPathTo(web.Item, { id: "42" })).toBe("/items/42");
-      expect(nextPathTo(web.ItemSearch, { page: 2, q: "lamp" })).toBe(
+      expect(pathTo(app.Item, { id: "42" })).toBe("/items/42");
+      expect(pathTo(app.ItemSearch, { page: 2, q: "lamp" })).toBe(
         "/items?q=lamp&page=2",
       );
-      expect(nextPathTo(web.Robots)).toBe("/robots.txt");
+      expect(pathTo(app.Robots)).toBe("/robots.txt");
     });
 
     it("passes the basePath to the Next url-to, not the Origin", () => {
-      expect(() =>
-        createNextUrlTo(web, "https://www.example.com/shop"),
-      ).toThrow("Invalid Origin: must not include a path");
+      const error = thrownBy(() =>
+        createNextUrlTo(app, "https://www.example.com/app"),
+      );
 
-      const nextUrlTo = createNextUrlTo(web, "https://www.example.com", {
-        basePath: "/shop",
+      expect(error).toBeInstanceOf(TypeError);
+      expect(error).toHaveProperty(
+        "message",
+        "Invalid Origin: must not include a path",
+      );
+
+      const urlTo = createNextUrlTo(app, "https://www.example.com", {
+        basePath: "/app",
       });
 
-      expect(nextUrlTo(web.User, { userId: "7" })).toBe(
-        "https://www.example.com/shop/users/7",
+      expect(urlTo(app.User, { userId: "7" })).toBe(
+        "https://www.example.com/app/users/7",
       );
-      expect(nextPathTo(web.User, { userId: "7" })).toBe("/users/7");
+      expect(pathTo(app.User, { userId: "7" })).toBe("/users/7");
     });
   });
 });
