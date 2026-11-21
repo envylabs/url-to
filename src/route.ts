@@ -4,8 +4,8 @@ import { parseTemplate } from "./template/engine.js";
 import type { CheckTemplate } from "./template/types.js";
 
 /**
- * An unnamed Route, as returned by {@link route}. It becomes a {@link Route}
- * once it is placed in a Route Set with {@link defineRouteSet}.
+ * A Route Definition: a Route before a Route Set names it and brands it with
+ * the Route Set.
  */
 export interface RouteDefinition<
   Template extends string = string,
@@ -26,8 +26,8 @@ export interface RouteDefinition<
 }
 
 /**
- * The RouteDefinition {@link route} returns. An option that was left out
- * infers as its constraint, so it is narrowed back to `undefined`.
+ * A RouteDefinition with each left-out option typed as `undefined`. A left-out
+ * option infers as its constraint, so it needs narrowing back.
  */
 type DeclaredRoute<
   Template extends string,

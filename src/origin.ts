@@ -1,6 +1,6 @@
 /**
  * Validates an Origin and returns it serialized as scheme, host and optional
- * port, with no trailing slash. Shared by every url-to (see ADR-0003).
+ * port, with no trailing slash.
  *
  * @throws TypeError when the Origin isn't a URL with a host, or includes
  * anything other than a scheme, host and port (a bare trailing `/` is allowed).

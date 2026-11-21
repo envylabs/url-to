@@ -51,7 +51,7 @@ export type NextRouteSet<
 export type NextUrlTo<RouteSetName extends string> = RouteBuilder<RouteSetName>;
 
 /**
- * Options for {@link createNextUrlTo}.
+ * The app's Next config that affects its fully-qualified URLs.
  */
 export interface NextUrlToOptions {
   /** The app's `basePath` from `next.config`, such as `/docs`. */

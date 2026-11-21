@@ -30,7 +30,7 @@ export type RouteParametersResult =
 /**
  * Validates Route Parameters against a Route. Runs the Route's schema when it
  * has one, then checks the resulting values against the template's
- * variables. Shared by building (path-to, url-to) and reverse parsing.
+ * variables.
  *
  * Never throws for invalid input; it reports issues instead. It throws a
  * `TypeError` naming the Route when the schema validates asynchronously.

@@ -5,7 +5,7 @@
  * where a missing or empty value would produce a broken path.
  *
  * Adding an operator means adding an entry here and its character to
- * `Operator` in `./types.ts`. The expander and validator read only this table.
+ * `Operator` in `./types.ts`.
  */
 export interface OperatorSpec {
   /** Whether reserved and pct-encoded characters are kept unescaped. */
