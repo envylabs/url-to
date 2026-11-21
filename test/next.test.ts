@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { UrlToError } from "../src/index.js";
-import { createNextPathTo } from "../src/next.js";
+import { route, UrlToError } from "../src/index.js";
+import {
+  createNextPathTo,
+  createNextUrlTo,
+  defineNextRouteSet,
+} from "../src/next.js";
 
 import { web } from "./fixtures/next-route-sets.js";
 
@@ -63,5 +67,105 @@ describe("createNextPathTo", () => {
     expect(() => pathTo(web.Item, { id: "" })).toThrow(
       'Invalid Route Parameters for Route "Item" in Route Set "web": id: must not be empty',
     );
+  });
+});
+
+describe("createNextUrlTo", () => {
+  it("builds a fully-qualified URL that includes the basePath", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/docs-site",
+    });
+
+    expect(urlTo(web.Item, { id: "1" })).toBe(
+      "https://example.com/docs-site/items/1",
+    );
+  });
+
+  it("builds the root Route as the basePath, with no trailing slash", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/docs-site",
+    });
+
+    expect(urlTo(web.Home)).toBe("https://example.com/docs-site");
+  });
+
+  it("keeps the root Route's query and fragment after the basePath", () => {
+    const site = defineNextRouteSet("site", {
+      Search: route("/{?q}#results"),
+    });
+    const urlTo = createNextUrlTo(site, "https://example.com", {
+      basePath: "/docs-site",
+    });
+
+    expect(urlTo(site.Search, { q: "a b" })).toBe(
+      "https://example.com/docs-site?q=a%20b#results",
+    );
+    expect(urlTo(site.Search, {})).toBe(
+      "https://example.com/docs-site#results",
+    );
+  });
+
+  it("builds URLs without a basePath", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com/");
+
+    expect(urlTo(web.Home)).toBe("https://example.com/");
+    expect(urlTo(web.Item, { id: "1" })).toBe("https://example.com/items/1");
+    expect(createNextUrlTo(web, "https://example.com", {})(web.About)).toBe(
+      "https://example.com/about",
+    );
+  });
+
+  it("treats an empty basePath as no basePath, like Next", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "",
+    });
+
+    expect(urlTo(web.Home)).toBe("https://example.com/");
+  });
+
+  it("escapes Route Parameters and keeps query and fragment parts", () => {
+    const urlTo = createNextUrlTo(web, "http://localhost:3000", {
+      basePath: "/docs-site",
+    });
+
+    expect(urlTo(web.Item, { id: "a/b c" })).toBe(
+      "http://localhost:3000/docs-site/items/a%2Fb%20c",
+    );
+    expect(urlTo(web.ItemSearch, { id: "1", q: "a&b" })).toBe(
+      "http://localhost:3000/docs-site/items/1?q=a%26b#reviews",
+    );
+    expect(urlTo(web.Shop, { slug: ["sale", "new"] })).toBe(
+      "http://localhost:3000/docs-site/shop/sale/new",
+    );
+    expect(urlTo(web.Robots)).toBe(
+      "http://localhost:3000/docs-site/robots.txt",
+    );
+  });
+
+  it("validates Route Parameters like the core url-to", () => {
+    const urlTo = createNextUrlTo(web, "https://example.com", {
+      basePath: "/docs-site",
+    });
+
+    expect(() => urlTo(web.Item, { id: "" })).toThrow(UrlToError);
+    expect(() => urlTo(web.Item, { id: "" })).toThrow(
+      'Invalid Route Parameters for Route "Item" in Route Set "web": id: must not be empty',
+    );
+  });
+
+  it.each([
+    ["items", "must be an absolute URL with a scheme and host"],
+    ["mailto:team@example.com", "must be an absolute URL with a scheme and host"],
+    ["https://user:secret@example.com", "must not include credentials"],
+    ["https://example.com/docs-site", "must not include a path"],
+    ["https://example.com?a=1", "must not include a query"],
+    ["https://example.com#top", "must not include a fragment"],
+  ])("rejects the Origin %s like the core url-to", (origin, reason) => {
+    expect(() => createNextUrlTo(web, origin)).toThrow(
+      new TypeError(`Invalid Origin: ${reason}`),
+    );
+    expect(() =>
+      createNextUrlTo(web, origin, { basePath: "/docs-site" }),
+    ).toThrow(new TypeError(`Invalid Origin: ${reason}`));
   });
 });

@@ -5,6 +5,7 @@
 import type { Route as NextRoute } from "next";
 
 import { buildPath } from "./build.js";
+import { parseOrigin } from "./origin.js";
 import type { RouteParametersArgs, RouteParametersOutput } from "./params.js";
 import {
   defineRouteSet,
@@ -27,6 +28,25 @@ export type NextPathTo<RouteSetName extends string> = <
   route: R,
   ...params: RouteParametersArgs<R>
 ) => R extends { readonly next: false } ? string : NextRoute;
+
+/**
+ * Builds fully-qualified URLs for the Routes of one Next Route Set, against
+ * one Origin. Unlike the Next path-to, the URL includes the app's `basePath`.
+ */
+export type NextUrlTo<RouteSetName extends string> = <
+  R extends Route<RouteDefinition, string, RouteSetName>,
+>(
+  route: R,
+  ...params: RouteParametersArgs<R>
+) => string;
+
+/**
+ * Options for {@link createNextUrlTo}.
+ */
+export interface NextUrlToOptions {
+  /** The app's `basePath` from `next.config`, such as `/docs`. */
+  readonly basePath?: string;
+}
 
 /**
  * A Route Set whose Routes were checked against the app's Next route patterns
@@ -195,6 +215,29 @@ export function createNextPathTo<RouteSetName extends string>(
   // The return type depends on the Route, which the implementation can't see.
   return (route: Route, params?: unknown) => buildPath(route, params);
 }
+
+/**
+ * Creates a Next url-to for a Next Route Set, an Origin and the app's
+ * `basePath`.
+ */
+export function createNextUrlTo<RouteSetName extends string>(
+  _routeSet: NextRouteSet<RouteSetName>,
+  origin: string,
+  options: NextUrlToOptions = {},
+): NextUrlTo<RouteSetName> {
+  const basePath = options.basePath ?? "";
+  const base = parseOrigin(origin) + basePath;
+
+  return (route, ...[params]) => {
+    const path = buildPath(route, params);
+
+    // Like Next, the root path under a basePath is the basePath itself.
+    return base + (basePath !== "" ? path.replace(rootSlash, "") : path);
+  };
+}
+
+/** The slash of the root path, before any query or fragment. */
+const rootSlash = /^\/(?=$|[?#])/u;
 
 /**
  * Groups Routes into a named Next Route Set, like `defineRouteSet`, and
