@@ -1,0 +1,30 @@
+{
+  "name": "url-to",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "vitest.explorer",
+        "streetsidesoftware.code-spell-checker"
+      ]
+    }
+  },
+  "mounts": [
+    {
+      "source": "url-to-node_modules-${devcontainerId}",
+      "target": "/workspaces/url-to/node_modules",
+      "type": "volume"
+    }
+  ],
+  "postCreateCommand": "sudo chown -R node:node node_modules && npm ci --no-audit --no-fund",
+  "remoteEnv": {
+    "EDITOR": "code --wait"
+  },
+  "remoteUser": "node",
+  "workspaceFolder": "/workspaces/url-to",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/url-to,type=bind"
+}
