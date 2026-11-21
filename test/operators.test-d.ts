@@ -7,47 +7,47 @@ import { operators } from "./fixtures/operators.js";
 describe("operator Route Parameters types", () => {
   it("infers required strings for path-type expressions", () => {
     expectTypeOf<RouteParameters<typeof operators.File>>().toEqualTypeOf<{
-      path: string;
+      path: boolean | number | string;
     }>();
     expectTypeOf<RouteParameters<typeof operators.Label>>().toEqualTypeOf<{
-      format: string;
+      format: boolean | number | string;
     }>();
     expectTypeOf<RouteParameters<typeof operators.Segments>>().toEqualTypeOf<{
-      page: string;
-      section: string;
+      page: boolean | number | string;
+      section: boolean | number | string;
     }>();
     expectTypeOf<RouteParameters<typeof operators.Matrix>>().toEqualTypeOf<{
-      id: string;
-      mode: string;
+      id: boolean | number | string;
+      mode: boolean | number | string;
     }>();
   });
 
   it("infers optional strings for query, continuation and fragment expressions", () => {
     expectTypeOf<RouteParameters<typeof operators.Results>>().toEqualTypeOf<{
-      page?: string;
-      q?: string;
+      page?: boolean | number | string;
+      q?: boolean | number | string;
     }>();
     expectTypeOf<
       RouteParameters<typeof operators.AddressBook>
     >().toEqualTypeOf<{
-      page?: string;
-      sort?: string;
+      page?: boolean | number | string;
+      sort?: boolean | number | string;
     }>();
     expectTypeOf<RouteParameters<typeof operators.Section>>().toEqualTypeOf<{
-      section?: string;
+      section?: boolean | number | string;
     }>();
   });
 
   it("mixes required and optional Route Parameters", () => {
     expectTypeOf<RouteParameters<typeof operators.Mixed>>().toEqualTypeOf<{
-      id: string;
-      q?: string;
+      id: boolean | number | string;
+      q?: boolean | number | string;
     }>();
   });
 
   it("requires a variable used in both a path-type and a query expression", () => {
     expectTypeOf<RouteParameters<typeof operators.Shared>>().toEqualTypeOf<{
-      q: string;
+      q: boolean | number | string;
     }>();
   });
 

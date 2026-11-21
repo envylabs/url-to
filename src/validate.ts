@@ -4,20 +4,27 @@ import type {
   StandardSchemaV1,
   StandardSchemaV1Issue,
 } from "./standard-schema.js";
-import { parseTemplate } from "./template/engine.js";
+import {
+  parseTemplate,
+  type ScalarValue,
+  type TemplateValue,
+  type TemplateValues,
+} from "./template/engine.js";
 
 /**
  * The outcome of validating Route Parameters against a Route.
  */
 export type RouteParametersResult =
   | {
-      readonly issues: readonly UrlToIssue[];
-      readonly success: false;
-    }
-  | {
+      // The schema's output, or `values` for a template-only Route.
+      readonly output: unknown;
       readonly success: true;
       /** The values that fill the template, keyed by variable name. */
-      readonly values: Readonly<Record<string, string | undefined>>;
+      readonly values: TemplateValues;
+    }
+  | {
+      readonly issues: readonly UrlToIssue[];
+      readonly success: false;
     };
 
 /**
@@ -41,14 +48,27 @@ export function validateRouteParameters(
     return { issues: result.issues.map(toUrlToIssue), success: false };
   }
 
-  return checkTemplateValues(route, result.value, false);
+  const checked = checkTemplateValues(route, result.value, false);
+  return checked.success ? { ...checked, output: result.value } : checked;
+}
+
+function checkScalar(
+  value: unknown,
+  path: readonly PropertyKey[],
+  message = "must be a string, number or boolean",
+): UrlToIssue[] {
+  if (typeof value === "number" && !Number.isFinite(value)) {
+    return [{ message: "must be a finite number", path }];
+  }
+  return isScalar(value) ? [] : [{ message, path }];
 }
 
 /**
  * Checks values against the template's variables: required variables must be
- * present, values must be strings, and every key must be a variable in the
- * template. Template-only Routes also reject empty path-type values; with a
- * schema, emptiness is the schema's call.
+ * present, values must be scalars (strings, finite numbers, booleans), lists
+ * or records of scalars, and every key must be a variable in the template.
+ * Template-only Routes also reject empty path-type values (including empty
+ * lists and records); with a schema, emptiness is the schema's call.
  */
 function checkTemplateValues(
   route: Route,
@@ -63,7 +83,7 @@ function checkTemplateValues(
   }
 
   const parsed = parseTemplate(route.template);
-  const values: Record<string, string> = {};
+  const values: Record<string, TemplateValue> = {};
   const issues: UrlToIssue[] = [];
   // Whether each variable is required: template-only Routes require every
   // path-type variable, schema Routes only those whose absence would leave
@@ -82,12 +102,16 @@ function checkTemplateValues(
       if (isRequired) {
         issues.push({ message: "is required", path: [name] });
       }
-    } else if (typeof value !== "string") {
-      issues.push({ message: "must be a string", path: [name] });
-    } else if (value === "" && isRequired && templateOnly) {
+      continue;
+    }
+
+    const valueIssues = checkValue(value, [name]);
+    if (valueIssues.length > 0) {
+      issues.push(...valueIssues);
+    } else if (isRequired && templateOnly && isEmpty(value as TemplateValue)) {
       issues.push({ message: "must not be empty", path: [name] });
     } else {
-      values[name] = value;
+      values[name] = value as TemplateValue;
     }
   }
 
@@ -102,11 +126,55 @@ function checkTemplateValues(
 
   return issues.length > 0
     ? { issues, success: false }
-    : { success: true, values };
+    : { output: values, success: true, values };
+}
+
+/**
+ * Issues for a value the template engine can't expand: anything other than a
+ * scalar, or a list or record of scalars.
+ */
+function checkValue(
+  value: unknown,
+  path: readonly PropertyKey[],
+): UrlToIssue[] {
+  if (Array.isArray(value) || isPlainObject(value)) {
+    return Object.entries(value).flatMap(([key, member]) =>
+      checkScalar(member, [...path, Array.isArray(value) ? Number(key) : key]),
+    );
+  }
+  return checkScalar(
+    value,
+    path,
+    "must be a string, number, boolean, list or record",
+  );
+}
+
+function isEmpty(value: TemplateValue): boolean {
+  return typeof value === "object"
+    ? Object.keys(value).length === 0
+    : value === "";
+}
+
+function isPlainObject(
+  value: unknown,
+): value is Readonly<Record<string, unknown>> {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const prototype: unknown = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isScalar(value: unknown): value is ScalarValue {
+  return (
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    typeof value === "number"
+  );
 }
 
 function runSchema(

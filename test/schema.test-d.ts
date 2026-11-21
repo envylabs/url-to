@@ -34,7 +34,7 @@ describe("Standard Schema Route Parameters types", () => {
 
   it("keeps inferring template-only Route Parameters", () => {
     expectTypeOf<RouteParameters<typeof catalog.User>>().toEqualTypeOf<{
-      userId: string;
+      userId: boolean | number | string;
     }>();
   });
 

@@ -17,6 +17,26 @@ export type CheckTemplate<Template extends string> = [
   ? unknown
   : Extract<ParseTemplate<Template>, TemplateError>;
 
+/** A list value, allowed only for exploded variables. */
+export type ListValue = readonly ScalarValue[];
+
+/**
+ * Keys of `Params` whose type admits a list or record (an array or a plain
+ * object type) and that name a scalar-only variable (see
+ * {@link ScalarVariableNames}). Non-empty means a compile error.
+ */
+export type MisplacedListKeys<Template extends string, Params> = {
+  [Key in keyof Params]-?: [
+    Extract<
+      Params[Key],
+      Readonly<Record<string, unknown>> | readonly unknown[]
+    >,
+  ] extends [never]
+    ? never
+    : Key;
+}[keyof Params] &
+  ScalarVariableNames<Template>;
+
 /**
  * The operators the engine supports. `""` is a simple expression. Add an
  * operator's character here when it is added to `operators` in
@@ -44,11 +64,27 @@ export type ParseTemplate<Template extends string> =
  */
 export type PathTypeOperator = ";" | "." | "" | "/" | "+";
 
+/** A record (associative array) value, allowed only for exploded variables. */
+export type RecordValue = Readonly<Record<string, ScalarValue>>;
+
 /**
  * Operators in which an optional Route Parameter is a compile error, because
  * leaving the value out would leave an empty path segment (e.g. `/items/`).
  */
 export type RequiredValueOperator = "" | "+";
+
+/** A single Route Parameter value. Mirrors `ScalarValue` in `./engine.ts`. */
+export type ScalarValue = boolean | number | string;
+
+/**
+ * Names of the template's variables that only take a scalar: those with at
+ * least one occurrence that isn't exploded. A list or record there is a
+ * compile error.
+ */
+export type ScalarVariableNames<Template extends string> = Extract<
+  TemplateVariables<Template>,
+  { readonly explode: false }
+>["name"];
 
 /** A template syntax problem, surfaced in the compiler's error message. */
 export interface TemplateError<Message extends string = string> {
@@ -56,9 +92,9 @@ export interface TemplateError<Message extends string = string> {
 }
 
 /**
- * The Route Parameters inferred from a template. A variable is a required
- * string if any of its occurrences is in a path-type expression, otherwise an
- * optional one.
+ * The Route Parameters inferred from a template. A variable is required if
+ * any of its occurrences is in a path-type expression, otherwise optional. It
+ * takes a scalar, or also a list or record when every occurrence is exploded.
  */
 export type TemplateParameters<Template extends string> = Simplify<
   {
@@ -66,21 +102,26 @@ export type TemplateParameters<Template extends string> = Simplify<
       Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
         ? never
         : Variable["name"]
-    ]?: ParameterValue<Variable>;
+    ]?: ParameterValue<Template, Variable["name"]>;
   } & {
     [
       Variable in TemplateVariables<Template> as Variable["name"] extends TemplateVariableNames<Template>
         ? Variable["name"]
         : never
-    ]: ParameterValue<Variable>;
+    ]: ParameterValue<Template, Variable["name"]>;
   }
 >;
 
-/** A variable in a template expression. */
+/**
+ * A variable in a template expression. `Explode` is `true` for a varspec
+ * with the explode modifier, e.g. `tags*` in `{?tags*}`.
+ */
 export interface TemplateVariable<
   Name extends string = string,
   Op extends Operator = Operator,
+  Explode extends boolean = boolean,
 > {
+  readonly explode: Explode;
   readonly name: Name;
   readonly operator: Op;
 }
@@ -149,10 +190,13 @@ type Lowercase =
 type OperatorCharacter =
   "," | ";" | "!" | "?" | "." | "@" | "/" | "&" | "#" | "+" | "=" | "|";
 /**
- * The value type accepted for a variable. Extend per operator and explode
- * flag as value types are added.
+ * The value type accepted for a variable: a list or record only when every
+ * occurrence of it is exploded, otherwise a scalar.
  */
-type ParameterValue<_Variable extends TemplateVariable> = string;
+type ParameterValue<Template extends string, Name extends string> =
+  Name extends ScalarVariableNames<Template>
+    ? ScalarValue
+    : ListValue | RecordValue | ScalarValue;
 
 type ParseExpression<Body extends string> =
   Body extends `${infer Character}${infer Varlist}`
@@ -175,10 +219,12 @@ type ParseVarspec<
   Op extends Operator,
 > = Varspec extends `${string}:${string}`
   ? TemplateError<`prefix modifiers are not supported in "${Varspec}"`>
-  : Varspec extends `${string}*${string}`
-    ? TemplateError<`unsupported modifier in "${Varspec}"`>
+  : Varspec extends `${infer Name}*`
+    ? IsVarname<Name> extends true
+      ? TemplateVariable<Name, Op, true>
+      : TemplateError<`invalid variable name "${Varspec}"`>
     : IsVarname<Varspec> extends true
-      ? TemplateVariable<Varspec, Op>
+      ? TemplateVariable<Varspec, Op, false>
       : TemplateError<`invalid variable name "${Varspec}"`>;
 
 type Simplify<T> = { [Key in keyof T]: T[Key] } & {};
